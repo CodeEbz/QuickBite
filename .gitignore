@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+mobile/node_modules/
+web/node_modules/
+
+# Expo
+mobile/.expo/
+mobile/dist/
+mobile/android/
+mobile/ios/
+
+# Next.js
+web/.next/
+web/out/
+
+# Backend build
+backend/target/
+
+# Environment files
+.env
+.env.local
+.env.production
+backend/src/main/resources/application-prod.properties
+
+# OS
+.DS_Store
+Thumbs.db
