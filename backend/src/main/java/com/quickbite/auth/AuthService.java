@@ -85,10 +85,17 @@ public class AuthService {
     }
 
     private void sendOtp(String email, String otp) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("QuickBite - Verify Your Email");
-        message.setText("Your OTP is: " + otp + "\nExpires in 10 minutes.");
-        mailSender.send(message);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("QuickBite - Verify Your Email");
+            message.setText("Your OTP is: " + otp + "\nExpires in 10 minutes.");
+            mailSender.send(message);
+            System.out.println("OTP email successfully sent to " + email);
+        } catch (Exception e) {
+            System.err.println("WARNING: Failed to send email (SMTP configurations might be missing/blank).");
+            System.err.println(">>> OTP code for " + email + " is: " + otp + " <<<");
+            System.err.println("SMTP Error details: " + e.getMessage());
+        }
     }
 }
