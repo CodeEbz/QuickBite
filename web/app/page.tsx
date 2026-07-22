@@ -313,29 +313,27 @@ export default function Home() {
                 ))}
               </>
             )}
+            {/* Logout button */}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-950/20 transition-all mt-6 border border-red-900/30"
+            >
+              <span>🚪</span>
+              <span>Logout Account</span>
+            </button>
           </nav>
         </div>
 
         {/* Footer profile info */}
         <div className="p-4 border-t border-zinc-850 bg-zinc-900/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-orange-600/10 border border-orange-500/30 flex items-center justify-center font-bold text-orange-400 text-sm animate-pulse">
-                {userName.charAt(0).toUpperCase()}
-              </div>
-              <div className="max-w-[120px]">
-                <p className="text-xs font-bold text-white truncate" title={userName}>{userName}</p>
-                <p className="text-[10px] text-zinc-500 font-semibold uppercase">{userRole === "ADMIN" ? "Super Admin" : "Merchant"}</p>
-              </div>
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-orange-600/10 border border-orange-500/30 flex items-center justify-center font-bold text-orange-400 text-sm">
+              {userName.charAt(0).toUpperCase()}
             </div>
-
-            <button
-              onClick={handleLogout}
-              className="p-2 hover:bg-red-500/10 text-zinc-500 hover:text-red-400 rounded-xl transition-all"
-              title="Logout"
-            >
-              🚪
-            </button>
+            <div className="max-w-[170px]">
+              <p className="text-xs font-bold text-white truncate" title={userName}>{userName}</p>
+              <p className="text-[10px] text-zinc-500 font-semibold uppercase">{userRole === "ADMIN" ? "Super Admin" : "Merchant"}</p>
+            </div>
           </div>
         </div>
       </aside>
