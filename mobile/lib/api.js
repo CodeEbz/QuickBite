@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Render production endpoint by default
-const DEFAULT_BASE_URL = 'https://quickbite-backend.onrender.com';
+const DEFAULT_BASE_URL = 'https://quickbite-backend-x63n.onrender.com';
 
 const api = axios.create({
   baseURL: DEFAULT_BASE_URL,

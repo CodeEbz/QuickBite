@@ -42,7 +42,7 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await fetch("https://quickbite-backend.onrender.com/api/auth/login", {
+      const response = await fetch("https://quickbite-backend-x63n.onrender.com/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
