@@ -6,6 +6,8 @@ import RestaurantsTab from "../components/RestaurantsTab";
 import OrdersTab from "../components/OrdersTab";
 import UsersTab from "../components/UsersTab";
 import ReportsTab from "../components/ReportsTab";
+import MenuManager from "../components/MenuManager";
+import KitchenQueue from "../components/KitchenQueue";
 
 export default function Home() {
   // Authentication states
@@ -13,23 +15,56 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [adminName, setAdminName] = useState("");
+  const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState(""); // ADMIN or RESTAURANT
+  const [restaurantName, setRestaurantName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
   // Dashboard states
-  const [activeTab, setActiveTab] = useState("overview"); // overview | restaurants | orders | users | reports
+  const [activeTab, setActiveTab] = useState("overview"); // overview | restaurants | orders | users | reports | kitchen | menu
 
-  // Check if admin is already logged in from localStorage on mount
+  // Check if user is already logged in from localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     const name = localStorage.getItem("adminName");
     const role = localStorage.getItem("adminRole");
-    if (token && role === "ADMIN") {
+    if (token && (role === "ADMIN" || role === "RESTAURANT")) {
       setIsLoggedIn(true);
-      setAdminName(name || "Administrator");
+      setUserName(name || "User");
+      setUserRole(role);
+      
+      // Default tabs
+      if (role === "RESTAURANT") {
+        setActiveTab("kitchen");
+      } else {
+        setActiveTab("overview");
+      }
     }
   }, []);
+
+  // Fetch restaurant profile details if merchant
+  useEffect(() => {
+    if (isLoggedIn && userRole === "RESTAURANT") {
+      const fetchProfile = async () => {
+        try {
+          const token = localStorage.getItem("adminToken");
+          const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/merchant/profile", {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setRestaurantName(data.name);
+          }
+        } catch (err) {
+          console.error("Error loading restaurant profile:", err);
+        }
+      };
+      fetchProfile();
+    }
+  }, [isLoggedIn, userRole]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,17 +92,25 @@ export default function Home() {
 
       const data = await response.json(); // returns { token, role, name }
 
-      if (data.role !== "ADMIN") {
-        throw new Error("Access denied. Admin portal is restricted to administrators.");
+      if (data.role !== "ADMIN" && data.role !== "RESTAURANT") {
+        throw new Error("Access denied. Portal is restricted to administrators and merchants.");
       }
 
-      // Save admin credentials
+      // Save credentials
       localStorage.setItem("adminToken", data.token);
       localStorage.setItem("adminRole", data.role);
       localStorage.setItem("adminName", data.name);
       
-      setAdminName(data.name);
+      setUserName(data.name);
+      setUserRole(data.role);
       setIsLoggedIn(true);
+
+      // Route to default tab based on role
+      if (data.role === "RESTAURANT") {
+        setActiveTab("kitchen");
+      } else {
+        setActiveTab("overview");
+      }
     } catch (err: any) {
       setError(err.message || "Unable to login. Please try again later.");
     } finally {
@@ -80,12 +123,14 @@ export default function Home() {
     localStorage.removeItem("adminRole");
     localStorage.removeItem("adminName");
     setIsLoggedIn(false);
-    setActiveTab("overview");
+    setRestaurantName("");
+    setUserRole("");
   };
 
   // Render correct sub-view
   const renderTabContent = () => {
     switch (activeTab) {
+      // Admin views
       case "overview":
         return <OverviewTab />;
       case "restaurants":
@@ -96,8 +141,15 @@ export default function Home() {
         return <UsersTab />;
       case "reports":
         return <ReportsTab />;
+      
+      // Merchant views
+      case "kitchen":
+        return <KitchenQueue />;
+      case "menu":
+        return <MenuManager />;
+      
       default:
-        return <OverviewTab />;
+        return userRole === "RESTAURANT" ? <KitchenQueue /> : <OverviewTab />;
     }
   };
 
@@ -136,8 +188,8 @@ export default function Home() {
         <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
           <div className="w-full max-w-md space-y-8 bg-zinc-900/40 p-8 rounded-3xl border border-zinc-900 shadow-2xl backdrop-blur-xl">
             <div className="space-y-2">
-              <h2 className="text-2xl font-extrabold text-white">Administrator Login</h2>
-              <p className="text-xs text-zinc-400">Enter your credentials below to access the management portal</p>
+              <h2 className="text-2xl font-extrabold text-white">QuickBite Portal</h2>
+              <p className="text-xs text-zinc-400">Log in to your Admin or Restaurant Merchant account</p>
             </div>
 
             {error && (
@@ -190,7 +242,7 @@ export default function Home() {
                 {isLoading ? (
                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  "Authenticate Administrator"
+                  "Authenticate Account"
                 )}
               </button>
             </form>
@@ -213,28 +265,54 @@ export default function Home() {
             <span className="font-extrabold text-lg tracking-tight text-white">QuickBite</span>
           </div>
 
-          {/* Nav list */}
+          {/* Role-Based Nav list */}
           <nav className="space-y-2">
-            {[
-              { id: "overview", label: "Dashboard", icon: "📊" },
-              { id: "restaurants", label: "Restaurants", icon: "🏪" },
-              { id: "orders", label: "Live Orders", icon: "🛒" },
-              { id: "users", label: "Users Directory", icon: "👤" },
-              { id: "reports", label: "Analytics", icon: "📈" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  activeTab === tab.id
-                    ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
-                }`}
-              >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
+            {userRole === "ADMIN" ? (
+              // Admin links
+              <>
+                {[
+                  { id: "overview", label: "Dashboard", icon: "📊" },
+                  { id: "restaurants", label: "Restaurants", icon: "🏪" },
+                  { id: "orders", label: "Live Orders", icon: "🛒" },
+                  { id: "users", label: "Users Directory", icon: "👤" },
+                  { id: "reports", label: "Analytics", icon: "📈" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                      activeTab === tab.id
+                        ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
+                    }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </>
+            ) : (
+              // Merchant links
+              <>
+                {[
+                  { id: "kitchen", label: "Kitchen Queue", icon: "🍳" },
+                  { id: "menu", label: "Menu Manager", icon: "📖" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                      activeTab === tab.id
+                        ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
+                    }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </>
+            )}
           </nav>
         </div>
 
@@ -242,12 +320,12 @@ export default function Home() {
         <div className="p-4 border-t border-zinc-850 bg-zinc-900/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-orange-600/10 border border-orange-500/30 flex items-center justify-center font-bold text-orange-400 text-sm">
-                {adminName.charAt(0).toUpperCase()}
+              <div className="w-9 h-9 rounded-xl bg-orange-600/10 border border-orange-500/30 flex items-center justify-center font-bold text-orange-400 text-sm animate-pulse">
+                {userName.charAt(0).toUpperCase()}
               </div>
               <div className="max-w-[120px]">
-                <p className="text-xs font-bold text-white truncate" title={adminName}>{adminName}</p>
-                <p className="text-[10px] text-zinc-500 font-semibold uppercase">Super Admin</p>
+                <p className="text-xs font-bold text-white truncate" title={userName}>{userName}</p>
+                <p className="text-[10px] text-zinc-500 font-semibold uppercase">{userRole === "ADMIN" ? "Super Admin" : "Merchant"}</p>
               </div>
             </div>
 
@@ -270,7 +348,9 @@ export default function Home() {
             <div className="w-7 h-7 rounded-lg bg-orange-600 flex items-center justify-center font-bold text-white text-xs">
               QB
             </div>
-            <span className="font-extrabold text-sm text-white">QuickBite</span>
+            <span className="font-extrabold text-sm text-white">
+              {userRole === "RESTAURANT" && restaurantName ? restaurantName : "QuickBite"}
+            </span>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -279,11 +359,20 @@ export default function Home() {
               onChange={(e) => setActiveTab(e.target.value)}
               className="bg-zinc-800 border border-zinc-700 text-xs font-bold rounded-lg px-2 py-1 text-white focus:outline-none"
             >
-              <option value="overview">Dashboard</option>
-              <option value="restaurants">Restaurants</option>
-              <option value="orders">Orders</option>
-              <option value="users">Users</option>
-              <option value="reports">Analytics</option>
+              {userRole === "ADMIN" ? (
+                <>
+                  <option value="overview">Dashboard</option>
+                  <option value="restaurants">Restaurants</option>
+                  <option value="orders">Orders</option>
+                  <option value="users">Users</option>
+                  <option value="reports">Analytics</option>
+                </>
+              ) : (
+                <>
+                  <option value="kitchen">Kitchen Queue</option>
+                  <option value="menu">Menu Manager</option>
+                </>
+              )}
             </select>
             <button onClick={handleLogout} className="text-sm">🚪</button>
           </div>
@@ -294,11 +383,17 @@ export default function Home() {
           <div className="max-w-6xl mx-auto space-y-8">
             <div className="flex justify-between items-center border-b border-zinc-900 pb-6">
               <div>
-                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white capitalize">
-                  {activeTab === "overview" ? "System Dashboard" : activeTab}
+                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white capitalize leading-none">
+                  {userRole === "RESTAURANT" && activeTab === "kitchen" && restaurantName 
+                    ? `${restaurantName} Kitchen` 
+                    : activeTab === "overview" 
+                    ? "System Dashboard" 
+                    : activeTab}
                 </h1>
-                <p className="text-xs text-zinc-500 mt-1.5">
-                  Platform administration control node and configuration interface
+                <p className="text-xs text-zinc-500 mt-2">
+                  {userRole === "ADMIN" 
+                    ? "Platform administration control node and configuration interface"
+                    : "Merchant dashboard portal for managing menus and dispatching orders"}
                 </p>
               </div>
               <div className="text-xs text-zinc-500 font-semibold hidden md:block">

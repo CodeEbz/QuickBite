@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,61 +8,48 @@ import {
   TouchableOpacity,
   Image,
   Animated,
-  Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
+import api from '../../lib/api';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
-
 const CATEGORIES = [
-  { id: 1, name: 'Burgers', icon: 'pizza' }, // Ionicons food equivalents
+  { id: 1, name: 'Burgers', icon: 'pizza' },
   { id: 2, name: 'Pizza', icon: 'pizza-outline' },
   { id: 3, name: 'Asian', icon: 'leaf-outline' },
   { id: 4, name: 'Desserts', icon: 'ice-cream-outline' },
   { id: 5, name: 'Drinks', icon: 'beer-outline' },
 ];
 
-const MOCK_RESTAURANTS = [
-  {
-    id: 1,
-    name: 'Burger Palace',
-    rating: '4.8',
-    time: '15-25 min',
-    tags: 'Burgers • American',
-    price: '$$',
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400',
-  },
-  {
-    id: 2,
-    name: 'Pizza Di Roma',
-    rating: '4.7',
-    time: '20-30 min',
-    tags: 'Pizza • Italian • Pasta',
-    price: '$$',
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400',
-  },
-  {
-    id: 3,
-    name: 'Sushi Zen',
-    rating: '4.9',
-    time: '25-35 min',
-    tags: 'Sushi • Japanese • Healthy',
-    price: '$$$',
-    image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400',
-  },
-];
-
-export default function CustomerHomeScreen() {
+export default function CustomerHomeScreen({ navigation }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+
+  const [restaurants, setRestaurants] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
+  const fetchRestaurants = async () => {
+    try {
+      const response = await api.get('/api/customer/restaurants');
+      setRestaurants(response.data);
+    } catch (err) {
+      setError('Unable to load restaurants.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
+    fetchRestaurants();
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -123,9 +110,6 @@ export default function CustomerHomeScreen() {
           {/* Categories */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Categories</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllLink}>See All</Text>
-            </TouchableOpacity>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
             {CATEGORIES.map((cat) => (
@@ -143,33 +127,44 @@ export default function CustomerHomeScreen() {
             <Text style={styles.sectionTitle}>Popular Restaurants</Text>
           </View>
 
-          {MOCK_RESTAURANTS.map((res) => (
-            <TouchableOpacity key={res.id} style={styles.restaurantCard} activeOpacity={0.95}>
-              <Image source={{ uri: res.image }} style={styles.restaurantImage} />
-              <View style={styles.restaurantInfo}>
-                <View style={styles.restaurantTitleRow}>
-                  <Text style={styles.restaurantName}>{res.name}</Text>
-                  <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={14} color="#FFD60A" />
-                    <Text style={styles.ratingText}>{res.rating}</Text>
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#FF5C00" style={{ marginTop: 20 }} />
+          ) : error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : restaurants.length === 0 ? (
+            <Text style={styles.emptyText}>No active restaurants available right now.</Text>
+          ) : (
+            restaurants.map((res) => (
+              <TouchableOpacity
+                key={res.id}
+                style={styles.restaurantCard}
+                activeOpacity={0.95}
+                onPress={() => navigation.navigate('RestaurantMenu', { restaurant: res })}
+              >
+                <Image source={{ uri: res.image }} style={styles.restaurantImage} />
+                <View style={styles.restaurantInfo}>
+                  <View style={styles.restaurantTitleRow}>
+                    <Text style={styles.restaurantName}>{res.name}</Text>
+                    <View style={styles.ratingBadge}>
+                      <Ionicons name="star" size={14} color="#FFD60A" />
+                      <Text style={styles.ratingText}>{res.rating > 0 ? res.rating.toFixed(1) : 'N/A'}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.restaurantTags}>{res.cuisineType || 'General'}</Text>
+                  <View style={styles.restaurantMetaRow}>
+                    <View style={styles.metaItem}>
+                      <Ionicons name="time-outline" size={14} color="#8A8A8E" />
+                      <Text style={styles.metaText}>20-30 min</Text>
+                    </View>
+                    <Text style={styles.metaDivider}>•</Text>
+                    <View style={styles.deliveryBadge}>
+                      <Text style={styles.deliveryBadgeText}>Free Delivery</Text>
+                    </View>
                   </View>
                 </View>
-                <Text style={styles.restaurantTags}>{res.tags}</Text>
-                <View style={styles.restaurantMetaRow}>
-                  <View style={styles.metaItem}>
-                    <Ionicons name="time-outline" size={14} color="#8A8A8E" />
-                    <Text style={styles.metaText}>{res.time}</Text>
-                  </View>
-                  <Text style={styles.metaDivider}>•</Text>
-                  <Text style={styles.priceText}>{res.price}</Text>
-                  <Text style={styles.metaDivider}>•</Text>
-                  <View style={styles.deliveryBadge}>
-                    <Text style={styles.deliveryBadgeText}>Free Delivery</Text>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))
+          )}
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
@@ -304,11 +299,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1E1E24',
   },
-  seeAllLink: {
-    color: '#FF5C00',
-    fontSize: 14,
-    fontWeight: '700',
-  },
   categoriesScroll: {
     marginHorizontal: -24,
     paddingHorizontal: 24,
@@ -399,11 +389,6 @@ const styles = StyleSheet.create({
     color: '#CED4DA',
     marginHorizontal: 8,
   },
-  priceText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#495057',
-  },
   deliveryBadge: {
     backgroundColor: '#EBFBEE',
     paddingHorizontal: 8,
@@ -414,5 +399,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: '#2B8A3E',
+  },
+  errorText: {
+    color: '#D9383A',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  emptyText: {
+    color: '#8A8A8E',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

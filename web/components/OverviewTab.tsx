@@ -1,13 +1,57 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+
+interface Stats {
+  totalRevenue: number;
+  totalOrders: number;
+  activeDrivers: number;
+  pendingApprovals: number;
+  totalRestaurants: number;
+}
 
 export default function OverviewTab() {
-  const stats = [
-    { label: "Total Revenue", value: "$124,580.30", change: "+12.5% this week", icon: "💰", color: "text-emerald-500" },
-    { label: "Active Orders", value: "42", change: "+4 from last hour", icon: "🛒", color: "text-orange-500" },
-    { label: "Active Drivers", value: "18", change: "92% utilization", icon: "🚴", color: "text-blue-500" },
-    { label: "Pending Approvals", value: "3", change: "Awaiting review", icon: "⏳", color: "text-amber-500" },
+  const [stats, setStats] = useState<Stats>({
+    totalRevenue: 0,
+    totalOrders: 0,
+    activeDrivers: 0,
+    pendingApprovals: 0,
+    totalRestaurants: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("adminToken");
+        const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/admin/stats", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (!res.ok) throw new Error("Failed to load statistics.");
+        const data = await res.json();
+        setStats({
+          totalRevenue: data.totalRevenue || 0,
+          totalOrders: data.totalOrders || 0,
+          activeDrivers: data.activeDrivers || 0,
+          pendingApprovals: data.pendingApprovals || 0,
+          totalRestaurants: data.totalRestaurants || 0
+        });
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const statsList = [
+    { label: "Total Revenue", value: `$${stats.totalRevenue.toFixed(2)}`, change: "Live sales", icon: "💰", color: "text-emerald-500" },
+    { label: "Active Orders", value: stats.totalOrders.toString(), change: "Cumulative orders", icon: "🛒", color: "text-orange-500" },
+    { label: "Active Drivers", value: stats.activeDrivers.toString(), change: "Ready for courier dispatch", icon: "🚴", color: "text-blue-500" },
+    { label: "Pending Approvals", value: stats.pendingApprovals.toString(), change: "Merchant applications", icon: "⏳", color: "text-amber-500" },
   ];
 
   const recentLogs = [
@@ -20,20 +64,28 @@ export default function OverviewTab() {
 
   // SVG chart data simulator
   const weeklySales = [
-    { day: "Mon", amount: 12000, height: "h-24" },
-    { day: "Tue", amount: 15000, height: "h-32" },
-    { day: "Wed", amount: 18000, height: "h-40" },
-    { day: "Thu", amount: 14000, height: "h-28" },
-    { day: "Fri", amount: 22000, height: "h-48" },
-    { day: "Sat", amount: 26000, height: "h-56" },
-    { day: "Sun", amount: 20000, height: "h-44" },
+    { day: "Mon", amount: 1200, height: "h-24" },
+    { day: "Tue", amount: 1500, height: "h-32" },
+    { day: "Wed", amount: 1800, height: "h-40" },
+    { day: "Thu", amount: 1400, height: "h-28" },
+    { day: "Fri", amount: 2200, height: "h-48" },
+    { day: "Sat", amount: 2600, height: "h-56" },
+    { day: "Sun", amount: 2000, height: "h-44" },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="py-20 flex justify-center items-center">
+        <span className="w-10 h-10 border-4 border-orange-600/30 border-t-orange-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
+        {statsList.map((stat, i) => (
           <div
             key={i}
             className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-orange-500/50"
@@ -46,10 +98,9 @@ export default function OverviewTab() {
               <span className="text-2xl p-2 bg-zinc-800/80 rounded-xl">{stat.icon}</span>
             </div>
             <p className="text-xs text-zinc-500 mt-4 flex items-center">
-              <span className={`mr-1 font-semibold ${stat.color.includes('emerald') ? 'text-emerald-400' : stat.color.includes('orange') ? 'text-orange-400' : stat.color.includes('blue') ? 'text-blue-400' : 'text-amber-400'}`}>
-                {stat.change.split(' ')[0]}
+              <span className={`mr-1 font-semibold ${stat.color}`}>
+                {stat.change}
               </span>
-              {stat.change.substring(stat.change.indexOf(' '))}
             </p>
           </div>
         ))}
@@ -66,7 +117,6 @@ export default function OverviewTab() {
           <div className="flex items-end justify-between h-64 pt-6 px-4 border-b border-zinc-800">
             {weeklySales.map((sale, i) => (
               <div key={i} className="flex flex-col items-center flex-1 group">
-                {/* Popover tooltip */}
                 <div className="absolute mb-24 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-orange-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md pointer-events-none transform -translate-y-2">
                   ${sale.amount.toLocaleString()}
                 </div>

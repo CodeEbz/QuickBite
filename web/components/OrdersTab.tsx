@@ -1,60 +1,71 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const INITIAL_ORDERS = [
-  {
-    id: "#QB-9204",
-    customer: "Sarah Jenkins",
-    restaurant: "Burger Palace",
-    driver: "David Miller",
-    items: "2x Cheese Burger, 1x Large Fries",
-    price: "$34.20",
-    status: "DELIVERING",
-    time: "10 mins ago",
-  },
-  {
-    id: "#QB-9201",
-    customer: "Michael Chang",
-    restaurant: "Pizza Di Roma",
-    driver: "Jessica Taylor",
-    items: "1x Spicy Pepperoni Pizza, 2x Soda Cane",
-    price: "$21.50",
-    status: "PREPARING",
-    time: "15 mins ago",
-  },
-  {
-    id: "#QB-9188",
-    customer: "Emma Watson",
-    restaurant: "Sushi Zen",
-    driver: "Kevin Parker",
-    items: "1x Salmon Nigiri, 1x California Roll",
-    price: "$45.00",
-    status: "DELIVERED",
-    time: "32 mins ago",
-  },
-  {
-    id: "#QB-9182",
-    customer: "Robert Downey",
-    restaurant: "Burger Palace",
-    driver: "N/A",
-    items: "1x Chicken Wrap, 1x Vanilla Milkshake",
-    price: "$18.90",
-    status: "PENDING",
-    time: "40 mins ago",
-  },
-];
+interface OrderItem {
+  id: number;
+  itemName: string;
+  quantity: number;
+  price: number;
+}
+
+interface Order {
+  id: number;
+  customerName: string;
+  restaurant: {
+    name: string;
+  };
+  driverName: string;
+  totalPrice: number;
+  status: "PENDING" | "PREPARING" | "DELIVERING" | "DELIVERED" | "CANCELLED";
+  createdAt: string;
+  items: OrderItem[];
+}
 
 export default function OrdersTab() {
-  const [orders, setOrders] = useState(INITIAL_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState("ALL"); // ALL | PENDING | PREPARING | DELIVERING | DELIVERED
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCancelOrder = (id: string) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === id ? { ...order, status: "CANCELLED" } : order
-      )
-    );
+  const fetchOrders = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/admin/orders", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error("Failed to fetch orders.");
+      const data = await res.json();
+      setOrders(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const handleCancelOrder = async (id: number) => {
+    if (!confirm("Are you sure you want to cancel this order?")) return;
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`https://quickbite-backend-x63n.onrender.com/api/admin/orders/${id}/cancel`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error("Failed to cancel order.");
+      fetchOrders();
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -88,69 +99,81 @@ export default function OrdersTab() {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-zinc-800 text-xs font-bold text-zinc-400 uppercase tracking-wider">
-              <th className="pb-3 pl-4">Order ID</th>
-              <th className="pb-3">Customer</th>
-              <th className="pb-3">Restaurant</th>
-              <th className="pb-3">Driver</th>
-              <th className="pb-3">Details</th>
-              <th className="pb-3">Price</th>
-              <th className="pb-3">Status</th>
-              <th className="pb-3 text-right pr-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800 text-sm">
-            {filteredOrders.map((o) => (
-              <tr key={o.id} className="group hover:bg-zinc-800/20 transition-all">
-                <td className="py-4 pl-4 font-bold text-orange-400">{o.id}</td>
-                <td className="py-4 font-semibold text-white">{o.customer}</td>
-                <td className="py-4 text-zinc-300">{o.restaurant}</td>
-                <td className="py-4 text-zinc-300">
-                  <span className={o.driver === "N/A" ? "text-zinc-600 italic" : "text-zinc-300 font-semibold"}>
-                    {o.driver}
-                  </span>
-                </td>
-                <td className="py-4 text-zinc-400 truncate max-w-[200px]" title={o.items}>
-                  {o.items}
-                </td>
-                <td className="py-4 font-bold text-white">{o.price}</td>
-                <td className="py-4">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
-                      o.status === "DELIVERED"
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                        : o.status === "DELIVERING"
-                        ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                        : o.status === "PREPARING"
-                        ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                        : o.status === "PENDING"
-                        ? "bg-orange-500/10 text-orange-400 border-orange-500/20"
-                        : "bg-red-500/10 text-red-400 border-red-500/20"
-                    }`}
-                  >
-                    {o.status.charAt(0) + o.status.slice(1).toLowerCase()}
-                  </span>
-                </td>
-                <td className="py-4 text-right pr-4">
-                  {o.status !== "DELIVERED" && o.status !== "CANCELLED" ? (
-                    <button
-                      onClick={() => handleCancelOrder(o.id)}
-                      className="px-2.5 py-1.5 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 rounded-lg text-xs font-bold transition-all"
-                    >
-                      Cancel Order
-                    </button>
-                  ) : (
-                    <span className="text-xs text-zinc-600 font-medium">Locked</span>
-                  )}
-                </td>
+      {error && <p className="text-red-400 text-sm mb-4">⚠️ {error}</p>}
+
+      {isLoading ? (
+        <div className="py-20 flex justify-center">
+          <span className="w-10 h-10 border-4 border-orange-600/30 border-t-orange-500 rounded-full animate-spin" />
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="py-20 text-center text-zinc-500 text-sm">
+          No orders found in this category.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-zinc-800 text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                <th className="pb-3 pl-4">Order ID</th>
+                <th className="pb-3">Customer</th>
+                <th className="pb-3">Restaurant</th>
+                <th className="pb-3">Driver</th>
+                <th className="pb-3">Details</th>
+                <th className="pb-3">Price</th>
+                <th className="pb-3">Status</th>
+                <th className="pb-3 text-right pr-4">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-zinc-800 text-sm">
+              {filteredOrders.map((o) => (
+                <tr key={o.id} className="group hover:bg-zinc-800/20 transition-all">
+                  <td className="py-4 pl-4 font-bold text-orange-400">#QB-{o.id}</td>
+                  <td className="py-4 font-semibold text-white">{o.customerName}</td>
+                  <td className="py-4 text-zinc-300">{o.restaurant?.name || "Unknown"}</td>
+                  <td className="py-4 text-zinc-300">
+                    <span className={!o.driverName ? "text-zinc-600 italic" : "text-zinc-300 font-semibold"}>
+                      {o.driverName || "N/A"}
+                    </span>
+                  </td>
+                  <td className="py-4 text-zinc-400 truncate max-w-[200px]" title={o.items?.map(i => `${i.quantity}x ${i.itemName}`).join(", ") || ""}>
+                    {o.items?.map(i => `${i.quantity}x ${i.itemName}`).join(", ") || "No items"}
+                  </td>
+                  <td className="py-4 font-bold text-white">${o.totalPrice.toFixed(2)}</td>
+                  <td className="py-4">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+                        o.status === "DELIVERED"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : o.status === "DELIVERING"
+                          ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                          : o.status === "PREPARING"
+                          ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                          : o.status === "PENDING"
+                          ? "bg-orange-500/10 text-orange-400 border-orange-500/20"
+                          : "bg-red-500/10 text-red-400 border-red-500/20"
+                      }`}
+                    >
+                      {o.status.charAt(0) + o.status.slice(1).toLowerCase()}
+                    </span>
+                  </td>
+                  <td className="py-4 text-right pr-4">
+                    {o.status !== "DELIVERED" && o.status !== "CANCELLED" ? (
+                      <button
+                        onClick={() => handleCancelOrder(o.id)}
+                        className="px-2.5 py-1.5 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 rounded-lg text-xs font-bold transition-all"
+                      >
+                        Cancel Order
+                      </button>
+                    ) : (
+                      <span className="text-xs text-zinc-600 font-medium">Locked</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
