@@ -10,13 +10,10 @@ import {
   ScrollView,
   Animated,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { login, clearErrors } from '../../store/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
-
-const { width } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -32,6 +29,8 @@ export default function LoginScreen({ navigation }) {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const logoScale = useRef(new Animated.Value(0.8)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
+  const emailInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
 
   useEffect(() => {
     // Clear previous errors when mounting
@@ -58,11 +57,22 @@ export default function LoginScreen({ navigation }) {
     ]).start();
   }, [dispatch]);
 
-  const handleLogin = () => {
-    if (!email.trim() || !password.trim()) {
+  const submitLogin = (loginEmail, loginPassword) => {
+    if (!loginEmail.trim() || !loginPassword.trim()) {
       return;
     }
-    dispatch(login({ email: email.trim(), password }));
+    dispatch(login({ email: loginEmail.trim(), password: loginPassword }));
+  };
+
+  const handleLogin = () => {
+    submitLogin(email, password);
+  };
+
+  const handleDemoLogin = (loginEmail) => {
+    const demoPassword = 'AdminPassword2026!';
+    setEmail(loginEmail);
+    setPassword(demoPassword);
+    submitLogin(loginEmail, demoPassword);
   };
 
   const handlePressIn = () => {
@@ -113,11 +123,13 @@ export default function LoginScreen({ navigation }) {
             )}
 
             {/* Email Input */}
-            <View
+            <TouchableOpacity
               style={[
                 styles.inputWrapper,
                 focusedInput === 'email' && styles.inputWrapperFocused,
               ]}
+              activeOpacity={1}
+              onPress={() => emailInputRef.current?.focus()}
             >
               <Ionicons
                 name="mail-outline"
@@ -126,24 +138,33 @@ export default function LoginScreen({ navigation }) {
                 style={styles.inputIcon}
               />
               <TextInput
+                ref={emailInputRef}
                 style={styles.input}
                 placeholder="Email Address"
                 placeholderTextColor="#8A8A8E"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
+                returnKeyType="next"
                 value={email}
                 onChangeText={setEmail}
                 onFocus={() => setFocusedInput('email')}
                 onBlur={() => setFocusedInput(null)}
+                onSubmitEditing={() => passwordInputRef.current?.focus()}
+                editable={!isLoading}
               />
-            </View>
+            </TouchableOpacity>
 
             {/* Password Input */}
-            <View
+            <TouchableOpacity
               style={[
                 styles.inputWrapper,
                 focusedInput === 'password' && styles.inputWrapperFocused,
               ]}
+              activeOpacity={1}
+              onPress={() => passwordInputRef.current?.focus()}
             >
               <Ionicons
                 name="lock-closed-outline"
@@ -152,25 +173,50 @@ export default function LoginScreen({ navigation }) {
                 style={styles.inputIcon}
               />
               <TextInput
+                ref={passwordInputRef}
                 style={styles.input}
                 placeholder="Password"
                 placeholderTextColor="#8A8A8E"
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="password"
+                textContentType="password"
+                returnKeyType="done"
                 value={password}
                 onChangeText={setPassword}
                 onFocus={() => setFocusedInput('password')}
                 onBlur={() => setFocusedInput(null)}
+                onSubmitEditing={handleLogin}
+                editable={!isLoading}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeIcon}
+                disabled={isLoading}
               >
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
                   color="#8A8A8E"
                 />
+              </TouchableOpacity>
+            </TouchableOpacity>
+
+            <View style={styles.demoRow}>
+              <TouchableOpacity
+                style={styles.demoBtn}
+                onPress={() => handleDemoLogin('sarah@gmail.com')}
+                disabled={isLoading}
+              >
+                <Text style={styles.demoBtnText}>Sarah</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.demoBtn}
+                onPress={() => handleDemoLogin('david@driver.com')}
+                disabled={isLoading}
+              >
+                <Text style={styles.demoBtnText}>Driver</Text>
               </TouchableOpacity>
             </View>
 
@@ -335,6 +381,26 @@ const styles = StyleSheet.create({
     color: '#FF5C00',
     fontSize: 14,
     fontWeight: '600',
+  },
+  demoRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  demoBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FFD3B8',
+    backgroundColor: '#FFF7F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  demoBtnText: {
+    color: '#C94B00',
+    fontSize: 14,
+    fontWeight: '700',
   },
   submitBtn: {
     backgroundColor: '#FF5C00',
