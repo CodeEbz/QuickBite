@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import api from '../../lib/api';
+import { pickImageFromLibrary, uploadImage } from '../../lib/imageUpload';
 import { Ionicons } from '@expo/vector-icons';
 
 const TABS = [
@@ -42,6 +43,8 @@ export default function RestaurantHomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
+  const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
+  const [uploadingMenuItemId, setUploadingMenuItemId] = useState(null);
   const [error, setError] = useState(null);
 
   const dispatch = useDispatch();
@@ -92,6 +95,38 @@ export default function RestaurantHomeScreen() {
 
   const handleLogout = () => {
     dispatch(logout());
+  };
+
+  const handleRestaurantImageUpload = async () => {
+    setIsUploadingProfileImage(true);
+    try {
+      setError(null);
+      const asset = await pickImageFromLibrary();
+      if (!asset) return;
+
+      const response = await uploadImage('/api/merchant/profile/image', asset);
+      setProfile(response.data);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to upload restaurant photo.'));
+    } finally {
+      setIsUploadingProfileImage(false);
+    }
+  };
+
+  const handleMenuImageUpload = async (itemId) => {
+    setUploadingMenuItemId(itemId);
+    try {
+      setError(null);
+      const asset = await pickImageFromLibrary();
+      if (!asset) return;
+
+      const response = await uploadImage(`/api/merchant/menu/${itemId}/image`, asset);
+      setMenuItems((prev) => prev.map((item) => (item.id === itemId ? response.data : item)));
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to upload menu item photo.'));
+    } finally {
+      setUploadingMenuItemId(null);
+    }
   };
 
   const updateOrderStatus = async (id, newStatus) => {
@@ -244,6 +279,17 @@ export default function RestaurantHomeScreen() {
               <Text style={styles.menuDesc} numberOfLines={2}>{item.description || item.category || 'Menu item'}</Text>
               <Text style={styles.menuPrice}>{formatMoney(item.price)}</Text>
             </View>
+            <TouchableOpacity
+              onPress={() => handleMenuImageUpload(item.id)}
+              disabled={uploadingMenuItemId === item.id}
+              style={styles.menuPhotoBtn}
+            >
+              {uploadingMenuItemId === item.id ? (
+                <ActivityIndicator size="small" color="#FF5C00" />
+              ) : (
+                <Ionicons name="camera-outline" size={18} color="#FF5C00" />
+              )}
+            </TouchableOpacity>
           </View>
         ))
       )}
@@ -254,7 +300,34 @@ export default function RestaurantHomeScreen() {
     <View style={styles.panel}>
       <Text style={styles.sectionTitle}>Restaurant Profile</Text>
       <View style={styles.profileCard}>
-        {profile?.image ? <Image source={{ uri: profile.image }} style={styles.profileImage} /> : null}
+        <TouchableOpacity
+          onPress={handleRestaurantImageUpload}
+          disabled={isUploadingProfileImage}
+          style={styles.profileImageWrap}
+          activeOpacity={0.9}
+        >
+          {profile?.image ? (
+            <Image source={{ uri: profile.image }} style={styles.profileImage} />
+          ) : (
+            <View style={[styles.profileImage, styles.profileImageEmpty]}>
+              <Ionicons name="image-outline" size={34} color="#8A8A8E" />
+            </View>
+          )}
+          <View style={styles.profileCameraBadge}>
+            {isUploadingProfileImage ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Ionicons name="camera" size={15} color="#FFFFFF" />
+            )}
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleRestaurantImageUpload}
+          disabled={isUploadingProfileImage}
+          style={styles.uploadCoverBtn}
+        >
+          <Text style={styles.uploadCoverText}>{profile?.image ? 'Change Restaurant Photo' : 'Add Restaurant Photo'}</Text>
+        </TouchableOpacity>
         <Text style={styles.profileName}>{profile?.name || 'Restaurant'}</Text>
         <Text style={styles.profileMeta}>{profile?.cuisineType || 'General cuisine'}</Text>
         <View style={styles.profileGrid}>
@@ -751,6 +824,15 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
   },
+  menuPhotoBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#FFF0E6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
   menuName: {
     fontSize: 15,
     fontWeight: '800',
@@ -774,12 +856,45 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
+  profileImageWrap: {
+    width: '100%',
+    height: 140,
+    marginBottom: 12,
+  },
   profileImage: {
     width: '100%',
     height: 140,
     borderRadius: 14,
     backgroundColor: '#ECEFF3',
+  },
+  profileImageEmpty: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileCameraBadge: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FF5C00',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  uploadCoverBtn: {
+    backgroundColor: '#FFF0E6',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     marginBottom: 14,
+  },
+  uploadCoverText: {
+    color: '#FF5C00',
+    fontSize: 12,
+    fontWeight: '800',
   },
   profileName: {
     color: '#171A1F',

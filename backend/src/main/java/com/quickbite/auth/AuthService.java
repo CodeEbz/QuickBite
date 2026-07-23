@@ -81,7 +81,7 @@ public class AuthService {
 
         // 3. Issue Token
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
-        return new AuthDtos.AuthResponse(token, user.getRole().name(), user.getName());
+        return new AuthDtos.AuthResponse(token, user.getRole().name(), user.getName(), user.getProfileImage());
     }
 
     public String verifyOtp(AuthDtos.VerifyOtpRequest req) {
@@ -115,7 +115,7 @@ public class AuthService {
             throw new RuntimeException("Invalid credentials");
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
-        return new AuthDtos.AuthResponse(token, user.getRole().name(), user.getName());
+        return new AuthDtos.AuthResponse(token, user.getRole().name(), user.getName(), user.getProfileImage());
     }
 
     private String generateOtp() {

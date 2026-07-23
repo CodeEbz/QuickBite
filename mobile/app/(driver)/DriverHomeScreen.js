@@ -9,11 +9,14 @@ import {
   Animated,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../../store/slices/authSlice';
+import { logout, updateUserProfile } from '../../store/slices/authSlice';
 import api from '../../lib/api';
+import { pickImageFromLibrary, uploadImage } from '../../lib/imageUpload';
 import { Ionicons } from '@expo/vector-icons';
 
 const DRIVER_TABS = [
@@ -30,6 +33,7 @@ export default function DriverHomeScreen() {
   const [deliveryHistory, setDeliveryHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [error, setError] = useState(null);
 
   const dispatch = useDispatch();
@@ -139,6 +143,24 @@ export default function DriverHomeScreen() {
 
   const handleLogout = () => {
     dispatch(logout());
+  };
+
+  const handleProfileImageUpload = async () => {
+    setIsUploadingPhoto(true);
+    try {
+      const asset = await pickImageFromLibrary();
+      if (!asset) return;
+
+      const response = await uploadImage('/api/users/me/profile-image', asset);
+      const updatedUser = response.data;
+      dispatch(updateUserProfile({ profileImage: updatedUser.profileImage }));
+      await AsyncStorage.setItem('profileImage', updatedUser.profileImage || '');
+    } catch (err) {
+      const message = err.response?.data?.error || err.message || 'Unable to update profile photo.';
+      alert(message);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   };
 
   const handleRefresh = () => {
@@ -393,12 +415,33 @@ export default function DriverHomeScreen() {
         {activeTab === 'profile' && (
           <View>
             <View style={styles.emptyCard}>
-              <View style={styles.profileAvatar}>
-                <Text style={styles.profileInitial}>{(user?.name || 'D')[0].toUpperCase()}</Text>
-              </View>
+              <TouchableOpacity
+                onPress={handleProfileImageUpload}
+                disabled={isUploadingPhoto}
+                style={styles.profileAvatarButton}
+                activeOpacity={0.85}
+              >
+                {user?.profileImage ? (
+                  <Image source={{ uri: user.profileImage }} style={styles.profileAvatarImage} />
+                ) : (
+                  <View style={styles.profileAvatar}>
+                    <Text style={styles.profileInitial}>{(user?.name || 'D')[0].toUpperCase()}</Text>
+                  </View>
+                )}
+                <View style={styles.cameraBadge}>
+                  {isUploadingPhoto ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="camera" size={15} color="#FFFFFF" />
+                  )}
+                </View>
+              </TouchableOpacity>
               <Text style={styles.emptyTitle}>{user?.name || 'Driver Partner'}</Text>
               <Text style={styles.emptyText}>{user?.email || 'driver@quickbite.com'}</Text>
               <Text style={styles.emptyText}>{completedDeliveries} deliveries completed</Text>
+              <TouchableOpacity onPress={handleProfileImageUpload} disabled={isUploadingPhoto} style={styles.photoBtn}>
+                <Text style={styles.photoBtnText}>{user?.profileImage ? 'Change Display Photo' : 'Add Display Photo'}</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={handleLogout} style={styles.refreshBtn}>
                 <Ionicons name="log-out-outline" size={16} color="#FFFFFF" />
                 <Text style={styles.refreshBtnText}>Sign Out</Text>
@@ -823,9 +866,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
+  profileAvatarButton: {
+    width: 86,
+    height: 86,
+    marginBottom: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileAvatarImage: {
+    width: 86,
+    height: 86,
+    borderRadius: 24,
+    backgroundColor: '#E9ECEF',
+  },
+  cameraBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#FF5C00',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   profileInitial: {
     color: '#FF5C00',
     fontSize: 30,
+    fontWeight: '800',
+  },
+  photoBtn: {
+    backgroundColor: '#FFF0E6',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    marginBottom: 14,
+  },
+  photoBtnText: {
+    color: '#FF5C00',
+    fontSize: 12,
     fontWeight: '800',
   },
 });

@@ -12,6 +12,14 @@ interface MenuItem {
   category: string;
 }
 
+interface ImageUploadResponse {
+  imageUrl?: string;
+  error?: string;
+}
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+
 export default function MenuManager() {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [name, setName] = useState("");
@@ -19,9 +27,11 @@ export default function MenuManager() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("Burgers");
   const [image, setImage] = useState("");
+  const [imageFileName, setImageFileName] = useState("");
   
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchMenu = async () => {
@@ -36,16 +46,50 @@ export default function MenuManager() {
       if (!res.ok) throw new Error("Failed to fetch menu.");
       const data = await res.json();
       setMenu(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to fetch menu."));
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMenu();
+    const timer = window.setTimeout(fetchMenu, 0);
+    return () => window.clearTimeout(timer);
   }, []);
+
+  const handleImageUpload = async (file: File | null) => {
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setError(null);
+
+    try {
+      const token = getAdminToken();
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/merchant/menu/images", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = (await res.json().catch(() => ({}))) as ImageUploadResponse;
+      if (!res.ok) throw new Error(data.error || "Failed to upload image.");
+
+      if (!data.imageUrl) throw new Error("Upload succeeded without an image URL.");
+
+      setImage(data.imageUrl);
+      setImageFileName(file.name);
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to upload image."));
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,10 +121,11 @@ export default function MenuManager() {
       setDescription("");
       setPrice("");
       setImage("");
+      setImageFileName("");
       
       fetchMenu();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to add menu item."));
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +172,7 @@ export default function MenuManager() {
         });
       }
       fetchMenu();
-    } catch (err: any) {
+    } catch {
       setError("Failed to add sample products.");
     } finally {
       setIsSubmitting(false);
@@ -148,8 +193,8 @@ export default function MenuManager() {
 
       if (!res.ok) throw new Error("Failed to delete item.");
       fetchMenu();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      alert(getErrorMessage(err, "Failed to delete item."));
     }
   };
 
@@ -211,7 +256,30 @@ export default function MenuManager() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-zinc-400 uppercase">Image URL (Optional)</label>
+            <label className="text-xs font-bold text-zinc-400 uppercase">Image</label>
+            <label className="flex min-h-24 cursor-pointer items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-950 px-3 py-4 text-center text-sm text-zinc-400 hover:border-orange-500 hover:text-orange-300">
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => handleImageUpload(e.target.files?.[0] || null)}
+              />
+              {isUploadingImage ? (
+                <span className="w-5 h-5 border-2 border-orange-500/30 border-t-orange-400 rounded-full animate-spin" />
+              ) : image ? (
+                <span className="space-y-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image} alt="Selected dish" className="mx-auto h-24 w-full max-w-48 rounded-lg object-cover border border-zinc-800" />
+                  <span className="block text-xs font-bold text-orange-400">{imageFileName || "Uploaded image selected"}</span>
+                </span>
+              ) : (
+                <span>Choose food photo from this computer</span>
+              )}
+            </label>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-zinc-400 uppercase">Image URL Fallback</label>
             <input
               type="text"
               placeholder="https://..."
@@ -233,7 +301,7 @@ export default function MenuManager() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isUploadingImage}
             className="w-full h-10 bg-orange-600 hover:bg-orange-500 active:scale-98 text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center text-sm cursor-pointer"
           >
             {isSubmitting ? (

@@ -21,7 +21,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "QuickBite needs gallery access so you can upload profile and food photos."
+        }
+      ]
     ]
   }
 }

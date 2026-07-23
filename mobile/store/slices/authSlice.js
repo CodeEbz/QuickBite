@@ -77,17 +77,18 @@ export const login = createAsyncThunk(
         password,
       });
       // Backend returns AuthResponse: { token, role, name }
-      const { token, role, name } = response.data;
+      const { token, role, name, profileImage } = response.data;
       
       // Save credentials to AsyncStorage
       await AsyncStorage.multiSet([
         ['token', token],
         ['role', role],
         ['userName', name],
-        ['userEmail', email]
+        ['userEmail', email],
+        ['profileImage', profileImage || '']
       ]);
 
-      return { token, role, name, email };
+      return { token, role, name, email, profileImage };
     } catch (error) {
       return rejectWithValue(getApiErrorMessage(error, 'Login failed'));
     }
@@ -98,7 +99,7 @@ export const logout = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      await AsyncStorage.multiRemove(['token', 'role', 'userName', 'userEmail']);
+      await AsyncStorage.multiRemove(['token', 'role', 'userName', 'userEmail', 'profileImage']);
       return null;
     } catch (error) {
       return rejectWithValue('Logout failed');
@@ -110,7 +111,7 @@ export const loadStoredAuth = createAsyncThunk(
   'auth/loadStoredAuth',
   async (_, { rejectWithValue }) => {
     try {
-      const keys = ['token', 'role', 'userName', 'userEmail'];
+      const keys = ['token', 'role', 'userName', 'userEmail', 'profileImage'];
       const stores = await AsyncStorage.multiGet(keys);
       const authData = {};
       
@@ -124,6 +125,7 @@ export const loadStoredAuth = createAsyncThunk(
           role: authData.role,
           name: authData.userName || '',
           email: authData.userEmail || '',
+          profileImage: authData.profileImage || '',
         };
       }
       return null;
@@ -148,6 +150,12 @@ const authSlice = createSlice({
     },
     setOtpEmail: (state, action) => {
       state.otpEmail = action.payload;
+    },
+    updateUserProfile: (state, action) => {
+      state.user = {
+        ...(state.user || {}),
+        ...action.payload,
+      };
     }
   },
   extraReducers: (builder) => {
@@ -198,6 +206,7 @@ const authSlice = createSlice({
         state.user = {
           name: action.payload.name,
           email: action.payload.email,
+          profileImage: action.payload.profileImage,
         };
       })
       .addCase(login.rejected, (state, action) => {
@@ -229,6 +238,7 @@ const authSlice = createSlice({
           state.user = {
             name: action.payload.name,
             email: action.payload.email,
+            profileImage: action.payload.profileImage,
           };
         }
       })
@@ -238,5 +248,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearErrors, resetRegisterStatus, setOtpEmail } = authSlice.actions;
+export const { clearErrors, resetRegisterStatus, setOtpEmail, updateUserProfile } = authSlice.actions;
 export default authSlice.reducer;
