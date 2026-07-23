@@ -15,6 +15,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 
 @Service
@@ -38,19 +39,22 @@ public class PaystackService {
         this.currency = currency;
     }
 
-    public InitializePaymentResponse initialize(String email, BigDecimal amount) {
+    public InitializePaymentResponse initialize(String email, BigDecimal amount, String callbackUrl) {
         ensureConfigured();
 
         long amountInSubunits = toSubunits(amount);
         String reference = "QB-" + UUID.randomUUID().toString().replace("-", "");
 
         try {
-            String payload = objectMapper.writeValueAsString(Map.of(
-                    "email", email,
-                    "amount", amountInSubunits,
-                    "reference", reference,
-                    "currency", currency
-            ));
+            Map<String, Object> payloadData = new HashMap<>();
+            payloadData.put("email", email);
+            payloadData.put("amount", amountInSubunits);
+            payloadData.put("reference", reference);
+            payloadData.put("currency", currency);
+            if (callbackUrl != null && !callbackUrl.isBlank()) {
+                payloadData.put("callback_url", callbackUrl);
+            }
+            String payload = objectMapper.writeValueAsString(payloadData);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/transaction/initialize"))

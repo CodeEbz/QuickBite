@@ -33,7 +33,15 @@
         {
           "cameraPermission": "QuickBite needs camera access so you can scan food barcodes."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "QuickBite needs your location so customers can track active deliveries.",
+          "locationWhenInUsePermission": "QuickBite needs your location so customers can track active deliveries."
+        }
       ]
-    ]
+    ],
+    "scheme": "quickbite"
   }
 }

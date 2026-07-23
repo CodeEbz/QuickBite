@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Linking,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCart } from '../../store/slices/cartSlice';
 import api from '../../lib/api';
+import * as ExpoLinking from 'expo-linking';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function CheckoutScreen({ route, navigation }) {
@@ -21,6 +23,7 @@ export default function CheckoutScreen({ route, navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [payment, setPayment] = useState(null);
+  const [paymentBrowserOpened, setPaymentBrowserOpened] = useState(false);
 
   const subtotal = cart.totalPrice;
   const deliveryFee = 2.50;
@@ -35,31 +38,12 @@ export default function CheckoutScreen({ route, navigation }) {
       price: i.price,
     })),
     totalPrice: total,
+    callbackUrl: ExpoLinking.createURL('payment'),
   });
 
-  const handleStartPayment = async () => {
-    if (payment?.authorizationUrl) {
-      await Linking.openURL(payment.authorizationUrl);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await api.post('/api/customer/payments/initialize', buildOrderPayload());
-      setPayment(response.data);
-      await Linking.openURL(response.data.authorizationUrl);
-    } catch (err) {
-      const message = err.response?.data?.error || err.message || 'Failed to start payment. Please try again.';
-      alert(message);
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyPayment = async () => {
-    if (!payment?.reference) {
-      alert('Start Paystack checkout before verifying payment.');
+  const verifyPayment = async (silent = false) => {
+    if (!payment?.reference || isVerifying) {
+      if (!silent) alert('Start Paystack checkout before verifying payment.');
       return;
     }
 
@@ -72,15 +56,61 @@ export default function CheckoutScreen({ route, navigation }) {
 
       dispatch(clearCart());
       setPayment(null);
+      setPaymentBrowserOpened(false);
       navigation.navigate('OrderStatus', { order: response.data });
     } catch (err) {
-      const message = err.response?.data?.error || err.message || 'Payment is not verified yet. Please complete checkout and try again.';
-      alert(message);
+      if (!silent) {
+        const message = err.response?.data?.error || err.message || 'Payment is not verified yet. Please complete checkout and try again.';
+        alert(message);
+      }
       console.error(err);
     } finally {
       setIsVerifying(false);
     }
   };
+
+  useEffect(() => {
+    const linkSubscription = Linking.addEventListener('url', ({ url }) => {
+      if (url?.includes('payment')) {
+        verifyPayment(true);
+      }
+    });
+
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && paymentBrowserOpened && payment?.reference) {
+        verifyPayment(true);
+      }
+    });
+
+    return () => {
+      linkSubscription.remove();
+      appStateSubscription.remove();
+    };
+  }, [payment?.reference, paymentBrowserOpened, isVerifying]);
+
+  const handleStartPayment = async () => {
+    if (payment?.authorizationUrl) {
+      setPaymentBrowserOpened(true);
+      await Linking.openURL(payment.authorizationUrl);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await api.post('/api/customer/payments/initialize', buildOrderPayload());
+      setPayment(response.data);
+      setPaymentBrowserOpened(true);
+      await Linking.openURL(response.data.authorizationUrl);
+    } catch (err) {
+      const message = err.response?.data?.error || err.message || 'Failed to start payment. Please try again.';
+      alert(message);
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyPayment = async () => verifyPayment(false);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -160,7 +190,7 @@ export default function CheckoutScreen({ route, navigation }) {
           <View style={styles.paymentCopy}>
             <Text style={styles.paymentTitle}>Secure Paystack checkout</Text>
             <Text style={styles.paymentText}>
-              Pay in the Paystack checkout page, then return here to verify and place your order.
+              Pay in Paystack. QuickBite will verify automatically when you return.
             </Text>
             {payment?.reference ? (
               <Text style={styles.referenceText}>Reference: {payment.reference}</Text>

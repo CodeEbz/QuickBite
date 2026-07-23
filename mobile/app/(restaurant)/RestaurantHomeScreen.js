@@ -47,6 +47,16 @@ export default function RestaurantHomeScreen() {
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
   const [uploadingMenuItemId, setUploadingMenuItemId] = useState(null);
+  const [editingMenuItem, setEditingMenuItem] = useState(null);
+  const [menuForm, setMenuForm] = useState({
+    name: '',
+    description: '',
+    price: '',
+    category: 'Burgers',
+    image: '',
+  });
+  const [isSavingMenuItem, setIsSavingMenuItem] = useState(false);
+  const [isUploadingMenuFormImage, setIsUploadingMenuFormImage] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState(null);
   const [replyText, setReplyText] = useState('');
@@ -134,6 +144,90 @@ export default function RestaurantHomeScreen() {
       setError(getApiErrorMessage(err, 'Unable to upload menu item photo.'));
     } finally {
       setUploadingMenuItemId(null);
+    }
+  };
+
+  const resetMenuForm = () => {
+    setEditingMenuItem(null);
+    setMenuForm({
+      name: '',
+      description: '',
+      price: '',
+      category: 'Burgers',
+      image: '',
+    });
+  };
+
+  const startEditMenuItem = (item) => {
+    setEditingMenuItem(item);
+    setMenuForm({
+      name: item.name || '',
+      description: item.description || '',
+      price: String(item.price || ''),
+      category: item.category || 'Burgers',
+      image: item.image || '',
+    });
+  };
+
+  const handleMenuFormImageUpload = async () => {
+    setIsUploadingMenuFormImage(true);
+    try {
+      setError(null);
+      const asset = await pickImageFromLibrary();
+      if (!asset) return;
+
+      const response = await uploadImage('/api/merchant/menu/images', asset);
+      setMenuForm((current) => ({ ...current, image: response.data.imageUrl }));
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to upload food photo.'));
+    } finally {
+      setIsUploadingMenuFormImage(false);
+    }
+  };
+
+  const saveMenuItem = async () => {
+    if (!menuForm.name.trim() || !menuForm.price.trim()) {
+      setError('Menu item name and price are required.');
+      return;
+    }
+
+    setIsSavingMenuItem(true);
+    try {
+      setError(null);
+      const payload = {
+        name: menuForm.name.trim(),
+        description: menuForm.description.trim(),
+        price: Number(menuForm.price),
+        category: menuForm.category,
+        image: menuForm.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
+      };
+
+      if (editingMenuItem?.id) {
+        const response = await api.put(`/api/merchant/menu/${editingMenuItem.id}`, payload);
+        setMenuItems((prev) => prev.map((item) => (item.id === editingMenuItem.id ? response.data : item)));
+      } else {
+        const response = await api.post('/api/merchant/menu', payload);
+        setMenuItems((prev) => [response.data, ...prev]);
+      }
+      resetMenuForm();
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to save menu item.'));
+    } finally {
+      setIsSavingMenuItem(false);
+    }
+  };
+
+  const deleteMenuItem = async (itemId) => {
+    setIsSavingMenuItem(true);
+    try {
+      setError(null);
+      await api.delete(`/api/merchant/menu/${itemId}`);
+      setMenuItems((prev) => prev.filter((item) => item.id !== itemId));
+      if (editingMenuItem?.id === itemId) resetMenuForm();
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to delete menu item.'));
+    } finally {
+      setIsSavingMenuItem(false);
     }
   };
 
@@ -325,15 +419,98 @@ export default function RestaurantHomeScreen() {
   const renderMenu = () => (
     <View style={styles.panel}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Menu Preview</Text>
+        <Text style={styles.sectionTitle}>{editingMenuItem ? 'Edit Menu Item' : 'Add Menu Item'}</Text>
         <Text style={styles.itemCount}>{menuItems.length} items</Text>
+      </View>
+
+      <View style={styles.menuFormCard}>
+        <TouchableOpacity
+          onPress={handleMenuFormImageUpload}
+          disabled={isUploadingMenuFormImage}
+          style={styles.menuFormImageBox}
+        >
+          {menuForm.image ? (
+            <Image source={{ uri: menuForm.image }} style={styles.menuFormImage} />
+          ) : (
+            <View style={styles.menuFormImageEmpty}>
+              <Ionicons name="image-outline" size={28} color="#8A8A8E" />
+              <Text style={styles.menuFormImageText}>Food photo</Text>
+            </View>
+          )}
+          <View style={styles.menuFormCameraBadge}>
+            {isUploadingMenuFormImage ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Ionicons name="camera" size={14} color="#FFFFFF" />
+            )}
+          </View>
+        </TouchableOpacity>
+
+        <TextInput
+          value={menuForm.name}
+          onChangeText={(value) => setMenuForm((current) => ({ ...current, name: value }))}
+          placeholder="Item name"
+          placeholderTextColor="#8A8A8E"
+          style={styles.menuInput}
+        />
+        <View style={styles.menuFormRow}>
+          <TextInput
+            value={menuForm.price}
+            onChangeText={(value) => setMenuForm((current) => ({ ...current, price: value }))}
+            placeholder="Price"
+            placeholderTextColor="#8A8A8E"
+            keyboardType="decimal-pad"
+            style={[styles.menuInput, styles.menuHalfInput]}
+          />
+          <TextInput
+            value={menuForm.category}
+            onChangeText={(value) => setMenuForm((current) => ({ ...current, category: value }))}
+            placeholder="Category"
+            placeholderTextColor="#8A8A8E"
+            style={[styles.menuInput, styles.menuHalfInput]}
+          />
+        </View>
+        <TextInput
+          value={menuForm.description}
+          onChangeText={(value) => setMenuForm((current) => ({ ...current, description: value }))}
+          placeholder="Description"
+          placeholderTextColor="#8A8A8E"
+          style={[styles.menuInput, styles.menuTextArea]}
+          multiline
+        />
+
+        <View style={styles.menuFormActions}>
+          {editingMenuItem ? (
+            <TouchableOpacity onPress={resetMenuForm} style={styles.menuCancelBtn}>
+              <Text style={styles.menuCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity
+            onPress={saveMenuItem}
+            disabled={isSavingMenuItem}
+            style={styles.menuSaveBtn}
+          >
+            {isSavingMenuItem ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.menuSaveText}>{editingMenuItem ? 'Save Changes' : 'Add Item'}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Active Menu</Text>
+        <TouchableOpacity onPress={fetchMerchantData} style={styles.iconBtn}>
+          <Ionicons name="reload" size={18} color="#FF5C00" />
+        </TouchableOpacity>
       </View>
 
       {menuItems.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="fast-food-outline" size={34} color="#8A8A8E" />
           <Text style={styles.emptyTitle}>No menu items yet</Text>
-          <Text style={styles.emptyText}>Use the web portal to add full menu details.</Text>
+          <Text style={styles.emptyText}>Add your first dish from this mobile menu editor.</Text>
         </View>
       ) : (
         menuItems.map((item) => (
@@ -344,17 +521,32 @@ export default function RestaurantHomeScreen() {
               <Text style={styles.menuDesc} numberOfLines={2}>{item.description || item.category || 'Menu item'}</Text>
               <Text style={styles.menuPrice}>{formatMoney(item.price)}</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => handleMenuImageUpload(item.id)}
-              disabled={uploadingMenuItemId === item.id}
-              style={styles.menuPhotoBtn}
-            >
-              {uploadingMenuItemId === item.id ? (
-                <ActivityIndicator size="small" color="#FF5C00" />
-              ) : (
-                <Ionicons name="camera-outline" size={18} color="#FF5C00" />
-              )}
-            </TouchableOpacity>
+            <View style={styles.menuActionsColumn}>
+              <TouchableOpacity
+                onPress={() => startEditMenuItem(item)}
+                style={styles.menuPhotoBtn}
+              >
+                <Ionicons name="create-outline" size={18} color="#1A73E8" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleMenuImageUpload(item.id)}
+                disabled={uploadingMenuItemId === item.id}
+                style={styles.menuPhotoBtn}
+              >
+                {uploadingMenuItemId === item.id ? (
+                  <ActivityIndicator size="small" color="#FF5C00" />
+                ) : (
+                  <Ionicons name="camera-outline" size={18} color="#FF5C00" />
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => deleteMenuItem(item.id)}
+                disabled={isSavingMenuItem}
+                style={[styles.menuPhotoBtn, styles.menuDeleteBtn]}
+              >
+                <Ionicons name="trash-outline" size={18} color="#D9383A" />
+              </TouchableOpacity>
+            </View>
           </View>
         ))
       )}
@@ -962,6 +1154,98 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
   },
+  menuFormCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    gap: 10,
+  },
+  menuFormImageBox: {
+    width: '100%',
+    height: 140,
+    borderRadius: 14,
+    backgroundColor: '#F1F3F5',
+    overflow: 'hidden',
+  },
+  menuFormImage: {
+    width: '100%',
+    height: '100%',
+  },
+  menuFormImageEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuFormImageText: {
+    color: '#8A8A8E',
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 6,
+  },
+  menuFormCameraBadge: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FF5C00',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuInput: {
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: 12,
+    color: '#171A1F',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  menuFormRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  menuHalfInput: {
+    flex: 1,
+  },
+  menuTextArea: {
+    minHeight: 78,
+    paddingTop: 12,
+    textAlignVertical: 'top',
+  },
+  menuFormActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  menuCancelBtn: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: '#F1F3F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuCancelText: {
+    color: '#6C757D',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  menuSaveBtn: {
+    flex: 2,
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: '#FF5C00',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuSaveText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
   menuImage: {
     width: 70,
     height: 70,
@@ -973,13 +1257,19 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   menuPhotoBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 34,
+    borderRadius: 10,
     backgroundColor: '#FFF0E6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10,
+  },
+  menuActionsColumn: {
+    gap: 6,
+    marginLeft: 8,
+  },
+  menuDeleteBtn: {
+    backgroundColor: '#FFF2F2',
   },
   menuName: {
     fontSize: 15,

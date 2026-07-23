@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout, updateUserProfile } from '../../store/slices/authSlice';
 import api from '../../lib/api';
 import { pickImageFromLibrary, uploadImage } from '../../lib/imageUpload';
+import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 
 const DRIVER_TABS = [
@@ -34,6 +35,7 @@ export default function DriverHomeScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [locationStatus, setLocationStatus] = useState('idle');
   const [error, setError] = useState(null);
 
   const dispatch = useDispatch();
@@ -141,13 +143,13 @@ export default function DriverHomeScreen() {
     }
   };
 
-  const updateDriverLocation = async (orderId) => {
-    const now = Date.now();
-    const drift = (now % 100000) / 100000;
-    const latitude = 6.5244 + drift * 0.018;
-    const longitude = 3.3792 + drift * 0.018;
+  const updateDriverLocation = async (orderId, coords) => {
     try {
-      await api.put(`/api/driver/orders/${orderId}/location`, { latitude, longitude });
+      await api.put(`/api/driver/orders/${orderId}/location`, {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
+      setLocationStatus('sharing');
     } catch (err) {
       console.error('Unable to update driver location:', err);
     }
@@ -155,9 +157,51 @@ export default function DriverHomeScreen() {
 
   useEffect(() => {
     if (!activeOrder?.id || activeOrder.status !== 'DELIVERING') return undefined;
-    updateDriverLocation(activeOrder.id);
-    const interval = setInterval(() => updateDriverLocation(activeOrder.id), 10000);
-    return () => clearInterval(interval);
+
+    let subscription;
+    let cancelled = false;
+
+    const startLocationSharing = async () => {
+      try {
+        setLocationStatus('requesting');
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (!permission.granted) {
+          setLocationStatus('denied');
+          setError('Location permission is needed for live delivery tracking.');
+          return;
+        }
+
+        const current = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!cancelled) {
+          await updateDriverLocation(activeOrder.id, current.coords);
+        }
+
+        subscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 10000,
+            distanceInterval: 25,
+          },
+          (position) => {
+            updateDriverLocation(activeOrder.id, position.coords);
+          }
+        );
+      } catch (err) {
+        setLocationStatus('error');
+        setError(err.message || 'Unable to start live location tracking.');
+      }
+    };
+
+    startLocationSharing();
+
+    return () => {
+      cancelled = true;
+      if (subscription) {
+        subscription.remove();
+      }
+    };
   }, [activeOrder?.id, activeOrder?.status]);
 
   const handleLogout = () => {
@@ -295,6 +339,20 @@ export default function DriverHomeScreen() {
               <View style={styles.payoutRow}>
                 <Text style={styles.payoutLabel}>Total Delivery Payout</Text>
                 <Text style={styles.payoutValue}>${Number(activeOrder.totalPrice).toFixed(2)}</Text>
+              </View>
+              <View style={styles.locationShareRow}>
+                <Ionicons
+                  name={locationStatus === 'sharing' ? 'location' : 'location-outline'}
+                  size={15}
+                  color={locationStatus === 'sharing' ? '#2B8A3E' : '#FFB366'}
+                />
+                <Text style={styles.locationShareText}>
+                  {locationStatus === 'sharing' && 'Live location sharing'}
+                  {locationStatus === 'requesting' && 'Requesting location permission'}
+                  {locationStatus === 'denied' && 'Location permission denied'}
+                  {locationStatus === 'error' && 'Location sharing unavailable'}
+                  {locationStatus === 'idle' && 'Preparing live tracking'}
+                </Text>
               </View>
             </View>
 
@@ -717,6 +775,20 @@ const styles = StyleSheet.create({
     color: '#2B8A3E',
     fontSize: 18,
     fontWeight: '800',
+  },
+  locationShareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#3A3A44',
+  },
+  locationShareText: {
+    color: '#D4D4D8',
+    fontSize: 12,
+    fontWeight: '800',
+    marginLeft: 7,
   },
   completeBtn: {
     backgroundColor: '#2B8A3E',

@@ -62,7 +62,7 @@ public class CustomerController {
             @RequestBody OrderRequest req
     ) {
         validateOrderRequest(req);
-        return ResponseEntity.ok(paystackService.initialize(principal.getName(), req.totalPrice()));
+        return ResponseEntity.ok(paystackService.initialize(principal.getName(), req.totalPrice(), req.callbackUrl()));
     }
 
     @PostMapping("/payments/verify")
@@ -162,7 +162,7 @@ public class CustomerController {
     }
 
     // Helper records for requests
-    public record OrderRequest(Long restaurantId, List<OrderItemRequest> items, BigDecimal totalPrice) {}
+    public record OrderRequest(Long restaurantId, List<OrderItemRequest> items, BigDecimal totalPrice, String callbackUrl) {}
     public record OrderItemRequest(String itemName, Integer quantity, BigDecimal price) {}
     public record VerifyPaymentRequest(String reference, OrderRequest order) {}
 }
