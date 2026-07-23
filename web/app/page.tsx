@@ -263,7 +263,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => { setIsRegisterMode(false); setError(null); }}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   !isRegisterMode ? "bg-orange-600 text-white shadow-md" : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
@@ -272,7 +272,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => { setIsRegisterMode(true); setError(null); }}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   isRegisterMode ? "bg-orange-600 text-white shadow-md" : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
@@ -338,7 +338,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-12 bg-orange-600 hover:bg-orange-500 active:scale-98 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-600/25 flex items-center justify-center text-sm"
+                  className="w-full h-12 bg-orange-600 hover:bg-orange-500 active:scale-98 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-600/25 flex items-center justify-center text-sm cursor-pointer"
                 >
                   {isLoading ? (
                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -380,7 +380,7 @@ export default function Home() {
                     <select
                       value={cuisineTypeInput}
                       onChange={(e) => setCuisineTypeInput(e.target.value)}
-                      className="w-full h-11 px-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white focus:outline-none focus:border-orange-500 text-sm"
+                      className="w-full h-11 px-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white focus:outline-none focus:border-orange-500 text-sm cursor-pointer"
                     >
                       <option value="Burgers & American">Burgers & American</option>
                       <option value="Pizza & Italian">Pizza & Italian</option>
@@ -418,7 +418,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-12 bg-orange-600 hover:bg-orange-500 active:scale-98 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-600/25 flex items-center justify-center text-sm mt-2"
+                  className="w-full h-12 bg-orange-600 hover:bg-orange-500 active:scale-98 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-600/25 flex items-center justify-center text-sm mt-2 cursor-pointer"
                 >
                   {isLoading ? (
                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -466,7 +466,7 @@ export default function Home() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                       activeTab === tab.id
                         ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
@@ -487,7 +487,7 @@ export default function Home() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                       activeTab === tab.id
                         ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
@@ -502,7 +502,7 @@ export default function Home() {
             {/* Logout button */}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-950/20 transition-all mt-6 border border-red-900/30"
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-950/20 transition-all mt-6 border border-red-900/30 cursor-pointer"
             >
               <span>🚪</span>
               <span>Logout Account</span>
@@ -544,7 +544,7 @@ export default function Home() {
             <select
               value={activeTab}
               onChange={(e) => setActiveTab(e.target.value)}
-              className="bg-zinc-800 border border-zinc-700 text-xs font-bold rounded-lg px-2 py-1 text-white focus:outline-none"
+              className="bg-zinc-800 border border-zinc-700 text-xs font-bold rounded-lg px-2 py-1 text-white focus:outline-none cursor-pointer"
             >
               {userRole === "ADMIN" ? (
                 <>
@@ -563,7 +563,7 @@ export default function Home() {
             </select>
             <button
               onClick={handleLogout}
-              className="px-2.5 py-1 bg-red-950/40 hover:bg-red-900/50 border border-red-800/40 text-red-400 text-xs font-bold rounded-lg transition-all"
+              className="px-2.5 py-1 bg-red-950/40 hover:bg-red-900/50 border border-red-800/40 text-red-400 text-xs font-bold rounded-lg transition-all cursor-pointer"
             >
               Logout
             </button>

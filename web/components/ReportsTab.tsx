@@ -69,7 +69,7 @@ export default function ReportsTab() {
             </div>
           </div>
 
-          <button className="w-full py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold transition-all mt-6 shadow-md">
+          <button className="w-full py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold transition-all mt-6 shadow-md cursor-pointer">
             Export Financial Report
           </button>
         </div>

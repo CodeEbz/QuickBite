@@ -67,7 +67,7 @@ export default function MenuManager() {
           description,
           price: parseFloat(price),
           category,
-          image: image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100",
+          image: image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
         }),
       });
 
@@ -81,6 +81,54 @@ export default function MenuManager() {
       fetchMenu();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleQuickAddSamples = async () => {
+    setIsSubmitting(true);
+    setError(null);
+
+    const samples = [
+      {
+        name: "Signature Double Cheeseburger",
+        description: "Double smashed beef patties, sharp cheddar, smoked bacon, house sauce on brioche",
+        price: 12.99,
+        category: "Burgers",
+        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400"
+      },
+      {
+        name: "Crispy Truffle Parmesan Fries",
+        description: "Sea-salted potato fries tossed in truffle oil and freshly grated parmesan",
+        price: 5.99,
+        category: "Burgers",
+        image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400"
+      },
+      {
+        name: "Artisan Chocolate Shake",
+        description: "Hand-spun cocoa ice cream topped with whipped cream and dark chocolate shavings",
+        price: 4.99,
+        category: "Drinks",
+        image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400"
+      }
+    ];
+
+    try {
+      const token = getAdminToken();
+      for (const sample of samples) {
+        await fetch("https://quickbite-backend-x63n.onrender.com/api/merchant/menu", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(sample),
+        });
+      }
+      fetchMenu();
+    } catch (err: any) {
+      setError("Failed to add sample products.");
     } finally {
       setIsSubmitting(false);
     }
@@ -108,8 +156,19 @@ export default function MenuManager() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
       {/* Menu Form */}
-      <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl h-fit">
-        <h3 className="text-lg font-bold text-white mb-4">Add Menu Item</h3>
+      <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl h-fit shadow-xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-white">Add Menu Item</h3>
+          <button
+            type="button"
+            onClick={handleQuickAddSamples}
+            disabled={isSubmitting}
+            className="text-xs font-bold text-orange-400 hover:text-orange-300 underline cursor-pointer"
+          >
+            + Quick Add Samples
+          </button>
+        </div>
+
         <form onSubmit={handleCreateItem} className="space-y-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-zinc-400 uppercase">Item Name</label>
@@ -141,7 +200,7 @@ export default function MenuManager() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full h-10 px-3 bg-zinc-950 border border-zinc-800 text-white rounded-xl text-sm focus:outline-none focus:border-orange-500"
+              className="w-full h-10 px-3 bg-zinc-950 border border-zinc-800 text-white rounded-xl text-sm focus:outline-none focus:border-orange-500 cursor-pointer"
             >
               <option value="Burgers">Burgers</option>
               <option value="Pizza">Pizza</option>
@@ -175,7 +234,7 @@ export default function MenuManager() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full h-10 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center text-sm"
+            className="w-full h-10 bg-orange-600 hover:bg-orange-500 active:scale-98 text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center text-sm cursor-pointer"
           >
             {isSubmitting ? (
               <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -187,7 +246,7 @@ export default function MenuManager() {
       </div>
 
       {/* Menu List */}
-      <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl lg:col-span-2">
+      <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl lg:col-span-2 shadow-xl">
         <h3 className="text-lg font-bold text-white mb-6">Active Menu Catalog</h3>
 
         {error && <p className="text-red-400 text-sm mb-4">⚠️ {error}</p>}
@@ -197,8 +256,15 @@ export default function MenuManager() {
             <span className="w-8 h-8 border-4 border-orange-600/30 border-t-orange-500 rounded-full animate-spin" />
           </div>
         ) : menu.length === 0 ? (
-          <div className="py-20 text-center text-zinc-500 text-sm">
-            No dishes added to your menu yet. Add your first item on the left!
+          <div className="py-20 text-center text-zinc-500 text-sm space-y-3">
+            <p>No dishes added to your menu yet.</p>
+            <button
+              onClick={handleQuickAddSamples}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-orange-600/20 hover:bg-orange-600/30 border border-orange-500/40 text-orange-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              🍔 Populate 3 Sample Dishes
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -221,7 +287,7 @@ export default function MenuManager() {
                 </div>
                 <button
                   onClick={() => handleDeleteItem(item.id)}
-                  className="p-2 bg-red-950/20 hover:bg-red-500/10 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="p-2 bg-red-950/20 hover:bg-red-500/10 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   title="Delete item"
                 >
                   🗑️

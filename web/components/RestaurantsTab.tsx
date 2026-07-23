@@ -80,7 +80,7 @@ export default function RestaurantsTab() {
             <button
               key={t}
               onClick={() => setFilter(t)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 filter === t
                   ? "bg-orange-600 text-white shadow-md"
                   : "text-zinc-400 hover:text-zinc-200"
@@ -162,7 +162,7 @@ export default function RestaurantsTab() {
                     {res.status === "PENDING_APPROVAL" ? (
                       <button
                         onClick={() => handleUpdateStatus(res.id, "ACTIVE")}
-                        className="px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-xs font-bold transition-all shadow-md"
+                        className="px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
                       >
                         Approve Partner
                       </button>
@@ -170,7 +170,7 @@ export default function RestaurantsTab() {
                       <div className="flex justify-end space-x-2">
                         <button
                           onClick={() => handleUpdateStatus(res.id, res.status === "SUSPENDED" ? "ACTIVE" : "SUSPENDED")}
-                          className={`px-2.5 py-1.5 border rounded-lg text-xs font-bold transition-all ${
+                          className={`px-2.5 py-1.5 border rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             res.status === "SUSPENDED"
                               ? "border-emerald-600 text-emerald-400 hover:bg-emerald-600/10"
                               : "border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30"

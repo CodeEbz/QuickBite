@@ -76,7 +76,7 @@ export default function UsersTab() {
             <button
               key={r}
               onClick={() => setFilterRole(r)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 filterRole === r
                   ? "bg-orange-600 text-white shadow-md"
                   : "text-zinc-400 hover:text-zinc-200"
@@ -155,7 +155,7 @@ export default function UsersTab() {
                     {u.role !== "ADMIN" ? (
                       <button
                         onClick={() => handleToggleVerify(u.id)}
-                        className={`px-2.5 py-1.5 border rounded-lg text-xs font-bold transition-all ${
+                        className={`px-2.5 py-1.5 border rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           u.verified
                             ? "border-red-950 text-red-400 hover:bg-red-650/10"
                             : "border-emerald-950 text-emerald-400 hover:bg-emerald-650/10"

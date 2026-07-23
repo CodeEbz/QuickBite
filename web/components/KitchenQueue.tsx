@@ -78,7 +78,7 @@ export default function KitchenQueue() {
         </div>
         <button
           onClick={fetchOrders}
-          className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all text-xs font-semibold"
+          className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all text-xs font-semibold cursor-pointer"
         >
           🔄 Refresh
         </button>
@@ -141,7 +141,7 @@ export default function KitchenQueue() {
                 {order.status === "PENDING" && (
                   <button
                     onClick={() => handleUpdateStatus(order.id, "PREPARING")}
-                    className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl transition-all shadow-md"
+                    className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer"
                   >
                     Accept & Prepare
                   </button>
@@ -150,7 +150,7 @@ export default function KitchenQueue() {
                 {order.status === "PREPARING" && (
                   <button
                     onClick={() => handleUpdateStatus(order.id, "READY")}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md"
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer"
                   >
                     Mark as Ready
                   </button>

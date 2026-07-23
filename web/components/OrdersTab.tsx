@@ -88,7 +88,7 @@ export default function OrdersTab() {
             <button
               key={t}
               onClick={() => setFilter(t)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 filter === t
                   ? "bg-orange-600 text-white shadow-md"
                   : "text-zinc-400 hover:text-zinc-200"
@@ -161,7 +161,7 @@ export default function OrdersTab() {
                     {o.status !== "DELIVERED" && o.status !== "CANCELLED" ? (
                       <button
                         onClick={() => handleCancelOrder(o.id)}
-                        className="px-2.5 py-1.5 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 rounded-lg text-xs font-bold transition-all"
+                        className="px-2.5 py-1.5 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 rounded-lg text-xs font-bold transition-all cursor-pointer"
                       >
                         Cancel Order
                       </button>
