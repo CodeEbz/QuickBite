@@ -14,6 +14,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { login, clearErrors } from '../../store/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -23,6 +24,7 @@ export default function LoginScreen({ navigation }) {
 
   const dispatch = useDispatch();
   const { isLoading, error } = useSelector((state) => state.auth);
+  const insets = useSafeAreaInsets();
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -95,7 +97,14 @@ export default function LoginScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContainer,
+          { paddingTop: Math.max(insets.top + 16, 28), paddingBottom: Math.max(insets.bottom + 24, 32) },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior="automatic"
+      >
         <Animated.View
           style={[
             styles.innerContainer,
@@ -217,6 +226,13 @@ export default function LoginScreen({ navigation }) {
                 disabled={isLoading}
               >
                 <Text style={styles.demoBtnText}>Driver</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.demoBtn}
+                onPress={() => handleDemoLogin('john@burgerpalace.com')}
+                disabled={isLoading}
+              >
+                <Text style={styles.demoBtnText}>Merchant</Text>
               </TouchableOpacity>
             </View>
 

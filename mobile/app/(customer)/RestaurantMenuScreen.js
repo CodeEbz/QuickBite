@@ -3,13 +3,13 @@ import {
   StyleSheet,
   Text,
   View,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Image,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, decrementQuantity, incrementQuantity } from '../../store/slices/cartSlice';
 import api from '../../lib/api';
@@ -70,7 +70,7 @@ export default function RestaurantMenuScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Header Image & Info */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}

@@ -14,6 +14,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { verifyOtp, clearErrors, resetRegisterStatus } from '../../store/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function VerifyOtpScreen({ navigation }) {
   const [otpCode, setOtpCode] = useState('');
@@ -22,6 +23,7 @@ export default function VerifyOtpScreen({ navigation }) {
 
   const dispatch = useDispatch();
   const { isLoading, error, otpStatus, otpEmail } = useSelector((state) => state.auth);
+  const insets = useSafeAreaInsets();
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -112,7 +114,14 @@ export default function VerifyOtpScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContainer,
+          { paddingTop: Math.max(insets.top + 14, 28), paddingBottom: Math.max(insets.bottom + 24, 36) },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior="automatic"
+      >
         <Animated.View
           style={[
             styles.innerContainer,
@@ -236,7 +245,6 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     padding: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
   },
   innerContainer: {
     width: '100%',
