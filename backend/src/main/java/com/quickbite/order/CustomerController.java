@@ -4,6 +4,7 @@ import com.quickbite.restaurant.MenuItem;
 import com.quickbite.restaurant.MenuItemRepository;
 import com.quickbite.restaurant.Restaurant;
 import com.quickbite.restaurant.RestaurantRepository;
+import com.quickbite.payment.PaystackService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +23,16 @@ public class CustomerController {
     private final RestaurantRepository restaurantRepository;
     private final MenuItemRepository menuItemRepository;
     private final OrderRepository orderRepository;
+    private final PaystackService paystackService;
 
     public CustomerController(RestaurantRepository restaurantRepository,
                               MenuItemRepository menuItemRepository,
-                              OrderRepository orderRepository) {
+                              OrderRepository orderRepository,
+                              PaystackService paystackService) {
         this.restaurantRepository = restaurantRepository;
         this.menuItemRepository = menuItemRepository;
         this.orderRepository = orderRepository;
+        this.paystackService = paystackService;
     }
 
     // 1. Browse Catalog (Restaurants & Menus)
@@ -49,8 +53,54 @@ public class CustomerController {
     // 2. Cart & Checkout (Place Order)
     @PostMapping("/orders")
     public ResponseEntity<Order> placeOrder(Principal principal, @RequestBody OrderRequest req) {
-        String email = principal.getName();
-        
+        return ResponseEntity.ok(createOrder(principal.getName(), req));
+    }
+
+    @PostMapping("/payments/initialize")
+    public ResponseEntity<PaystackService.InitializePaymentResponse> initializePayment(
+            Principal principal,
+            @RequestBody OrderRequest req
+    ) {
+        validateOrderRequest(req);
+        return ResponseEntity.ok(paystackService.initialize(principal.getName(), req.totalPrice()));
+    }
+
+    @PostMapping("/payments/verify")
+    public ResponseEntity<Order> verifyPaymentAndCreateOrder(
+            Principal principal,
+            @RequestBody VerifyPaymentRequest req
+    ) {
+        if (req == null || req.order() == null) {
+            throw new RuntimeException("Order details are required.");
+        }
+        validateOrderRequest(req.order());
+
+        PaystackService.VerifyPaymentResponse verification = paystackService.verify(req.reference());
+        long expectedAmount = req.order().totalPrice()
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(0, java.math.RoundingMode.HALF_UP)
+                .longValueExact();
+        if (!verification.successful() || !verification.amount().equals(expectedAmount)) {
+            throw new RuntimeException("Payment has not been completed for this order.");
+        }
+
+        return ResponseEntity.ok(orderRepository.findByPaymentReference(verification.reference())
+                .map(existingOrder -> {
+                    if (!existingOrder.getCustomerEmail().equals(principal.getName())) {
+                        throw new RuntimeException("Access denied. This payment belongs to another account.");
+                    }
+                    return existingOrder;
+                })
+                .orElseGet(() -> createOrder(principal.getName(), req.order(), verification.reference(), verification.status())));
+    }
+
+    private Order createOrder(String email, OrderRequest req) {
+        return createOrder(email, req, null, null);
+    }
+
+    private Order createOrder(String email, OrderRequest req, String paymentReference, String paymentStatus) {
+        validateOrderRequest(req);
+
         Restaurant restaurant = restaurantRepository.findById(req.restaurantId())
                 .orElseThrow(() -> new RuntimeException("Restaurant not found"));
 
@@ -60,6 +110,8 @@ public class CustomerController {
         order.setRestaurant(restaurant);
         order.setTotalPrice(req.totalPrice());
         order.setStatus(Order.Status.PENDING);
+        order.setPaymentReference(paymentReference);
+        order.setPaymentStatus(paymentStatus);
 
         List<OrderItem> items = new ArrayList<>();
         for (OrderItemRequest itemReq : req.items()) {
@@ -72,7 +124,22 @@ public class CustomerController {
         }
         order.setItems(items);
 
-        return ResponseEntity.ok(orderRepository.save(order));
+        return orderRepository.save(order);
+    }
+
+    private void validateOrderRequest(OrderRequest req) {
+        if (req == null) {
+            throw new RuntimeException("Order details are required.");
+        }
+        if (req.restaurantId() == null) {
+            throw new RuntimeException("Restaurant is required.");
+        }
+        if (req.items() == null || req.items().isEmpty()) {
+            throw new RuntimeException("Cart is empty.");
+        }
+        if (req.totalPrice() == null || req.totalPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Order total must be greater than zero.");
+        }
     }
 
     // 3. Order History & Status
@@ -97,4 +164,5 @@ public class CustomerController {
     // Helper records for requests
     public record OrderRequest(Long restaurantId, List<OrderItemRequest> items, BigDecimal totalPrice) {}
     public record OrderItemRequest(String itemName, Integer quantity, BigDecimal price) {}
+    public record VerifyPaymentRequest(String reference, OrderRequest order) {}
 }

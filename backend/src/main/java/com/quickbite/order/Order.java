@@ -34,6 +34,11 @@ public class Order {
     @Column(nullable = false)
     private BigDecimal totalPrice;
 
+    @Column(unique = true)
+    private String paymentReference;
+
+    private String paymentStatus;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
@@ -55,6 +60,10 @@ public class Order {
     public void setStatus(Status status) { this.status = status; }
     public BigDecimal getTotalPrice() { return totalPrice; }
     public void setTotalPrice(BigDecimal totalPrice) { this.totalPrice = totalPrice; }
+    public String getPaymentReference() { return paymentReference; }
+    public void setPaymentReference(String paymentReference) { this.paymentReference = paymentReference; }
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public List<OrderItem> getItems() { return items; }
     public void setItems(List<OrderItem> items) {

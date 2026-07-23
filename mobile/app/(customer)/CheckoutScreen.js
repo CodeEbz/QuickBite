@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Animated,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -19,38 +19,66 @@ export default function CheckoutScreen({ route, navigation }) {
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart);
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [payment, setPayment] = useState(null);
 
   const subtotal = cart.totalPrice;
   const deliveryFee = 2.50;
   const tax = subtotal * 0.08;
   const total = subtotal + deliveryFee + tax;
 
-  const handlePlaceOrder = async () => {
+  const buildOrderPayload = () => ({
+    restaurantId: restaurant.id,
+    items: cart.items.map((i) => ({
+      itemName: i.name,
+      quantity: i.quantity,
+      price: i.price,
+    })),
+    totalPrice: total,
+  });
+
+  const handleStartPayment = async () => {
+    if (payment?.authorizationUrl) {
+      await Linking.openURL(payment.authorizationUrl);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const orderPayload = {
-        restaurantId: restaurant.id,
-        items: cart.items.map((i) => ({
-          itemName: i.name,
-          quantity: i.quantity,
-          price: i.price,
-        })),
-        totalPrice: total,
-      };
-
-      const response = await api.post('/api/customer/orders', orderPayload);
-      
-      // Clear Redux Cart
-      dispatch(clearCart());
-
-      // Navigate to order status tracker
-      navigation.navigate('OrderStatus', { order: response.data });
+      const response = await api.post('/api/customer/payments/initialize', buildOrderPayload());
+      setPayment(response.data);
+      await Linking.openURL(response.data.authorizationUrl);
     } catch (err) {
-      const message = err.response?.data?.error || err.message || 'Failed to place order. Please try again.';
+      const message = err.response?.data?.error || err.message || 'Failed to start payment. Please try again.';
       alert(message);
       console.error(err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleVerifyPayment = async () => {
+    if (!payment?.reference) {
+      alert('Start Paystack checkout before verifying payment.');
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const response = await api.post('/api/customer/payments/verify', {
+        reference: payment.reference,
+        order: buildOrderPayload(),
+      });
+
+      dispatch(clearCart());
+      setPayment(null);
+      navigation.navigate('OrderStatus', { order: response.data });
+    } catch (err) {
+      const message = err.response?.data?.error || err.message || 'Payment is not verified yet. Please complete checkout and try again.';
+      alert(message);
+      console.error(err);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -124,13 +152,28 @@ export default function CheckoutScreen({ route, navigation }) {
             </View>
           </View>
         </View>
+
+        <View style={styles.paymentCard}>
+          <View style={styles.paymentIconWrap}>
+            <Ionicons name="shield-checkmark-outline" size={22} color="#0E7C66" />
+          </View>
+          <View style={styles.paymentCopy}>
+            <Text style={styles.paymentTitle}>Secure Paystack checkout</Text>
+            <Text style={styles.paymentText}>
+              Pay in the Paystack checkout page, then return here to verify and place your order.
+            </Text>
+            {payment?.reference ? (
+              <Text style={styles.referenceText}>Reference: {payment.reference}</Text>
+            ) : null}
+          </View>
+        </View>
       </ScrollView>
 
       {/* Pay & Place Order Button */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          onPress={handlePlaceOrder}
-          disabled={isLoading || cart.items.length === 0}
+          onPress={handleStartPayment}
+          disabled={isLoading || isVerifying || cart.items.length === 0}
           style={[styles.placeOrderBtn, isLoading && styles.placeOrderBtnDisabled]}
           activeOpacity={0.9}
         >
@@ -138,11 +181,28 @@ export default function CheckoutScreen({ route, navigation }) {
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <>
-              <Text style={styles.placeOrderText}>Confirm & Place Order</Text>
+              <Text style={styles.placeOrderText}>{payment ? 'Reopen Paystack' : 'Pay with Paystack'}</Text>
               <Ionicons name="card-outline" size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />
             </>
           )}
         </TouchableOpacity>
+        {payment?.reference ? (
+          <TouchableOpacity
+            onPress={handleVerifyPayment}
+            disabled={isVerifying || isLoading}
+            style={[styles.verifyBtn, isVerifying && styles.verifyBtnDisabled]}
+            activeOpacity={0.9}
+          >
+            {isVerifying ? (
+              <ActivityIndicator size="small" color="#0E7C66" />
+            ) : (
+              <>
+                <Text style={styles.verifyBtnText}>Verify Payment & Place Order</Text>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#0E7C66" style={{ marginLeft: 8 }} />
+              </>
+            )}
+          </TouchableOpacity>
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -174,7 +234,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
-    paddingBottom: 100,
+    paddingBottom: 160,
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
@@ -290,6 +350,45 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FF5C00',
   },
+  paymentCard: {
+    backgroundColor: '#EFFFF9',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#C6F3E7',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  paymentIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  paymentCopy: {
+    flex: 1,
+  },
+  paymentTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0A4F42',
+  },
+  paymentText: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#32695D',
+    marginTop: 4,
+  },
+  referenceText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0E7C66',
+    marginTop: 10,
+  },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
@@ -319,6 +418,25 @@ const styles = StyleSheet.create({
   placeOrderText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '800',
+  },
+  verifyBtn: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#0E7C66',
+    marginTop: 12,
+  },
+  verifyBtnDisabled: {
+    opacity: 0.7,
+  },
+  verifyBtnText: {
+    color: '#0E7C66',
+    fontSize: 15,
     fontWeight: '800',
   },
 });
