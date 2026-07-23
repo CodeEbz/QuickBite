@@ -46,7 +46,8 @@ export default function CheckoutScreen({ route, navigation }) {
       // Navigate to order status tracker
       navigation.navigate('OrderStatus', { order: response.data });
     } catch (err) {
-      alert('Failed to place order. Please try again.');
+      const message = err.response?.data?.error || err.message || 'Failed to place order. Please try again.';
+      alert(message);
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -231,7 +232,9 @@ const styles = StyleSheet.create({
   addressText: {
     fontSize: 14,
     color: '#495057',
-    fontWeight: '550',
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 20,
   },
   itemsList: {},
   itemRow: {
@@ -242,7 +245,7 @@ const styles = StyleSheet.create({
   },
   itemQty: {
     fontSize: 14,
-    fontWeight: '750',
+    fontWeight: '700',
     color: '#FF5C00',
     width: 32,
   },
@@ -284,7 +287,7 @@ const styles = StyleSheet.create({
   },
   totalValue: {
     fontSize: 16,
-    fontWeight: '850',
+    fontWeight: '800',
     color: '#FF5C00',
   },
   bottomBar: {

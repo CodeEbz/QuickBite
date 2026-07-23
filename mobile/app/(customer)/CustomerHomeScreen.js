@@ -9,6 +9,8 @@ import {
   Image,
   Animated,
   ActivityIndicator,
+  TextInput,
+  RefreshControl,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
@@ -29,7 +31,10 @@ export default function CustomerHomeScreen({ navigation }) {
 
   const [restaurants, setRestaurants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -37,13 +42,16 @@ export default function CustomerHomeScreen({ navigation }) {
 
   const fetchRestaurants = async () => {
     try {
+      setError(null);
       const response = await api.get('/api/customer/restaurants');
       setRestaurants(response.data);
     } catch (err) {
-      setError('Unable to load restaurants.');
+      const message = err.response?.data?.error || err.message || 'Unable to load restaurants.';
+      setError(message);
       console.error(err);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -68,6 +76,24 @@ export default function CustomerHomeScreen({ navigation }) {
     dispatch(logout());
   };
 
+  const filteredRestaurants = restaurants.filter((restaurant) => {
+    const query = searchQuery.trim().toLowerCase();
+    const cuisine = (restaurant.cuisineType || '').toLowerCase();
+    const name = (restaurant.name || '').toLowerCase();
+    const matchesSearch = !query || name.includes(query) || cuisine.includes(query);
+    const matchesCategory =
+      selectedCategory === 'All' ||
+      cuisine.includes(selectedCategory.toLowerCase()) ||
+      name.includes(selectedCategory.toLowerCase());
+
+    return matchesSearch && matchesCategory;
+  });
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchRestaurants();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -85,7 +111,14 @@ export default function CustomerHomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#FF5C00" />
+        }
+      >
         {/* Welcome Section */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <View style={styles.welcomeBanner}>
@@ -101,10 +134,24 @@ export default function CustomerHomeScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Search bar placeholder */}
+          {/* Search */}
           <View style={styles.searchBar}>
             <Ionicons name="search" size={20} color="#8A8A8E" style={styles.searchIcon} />
-            <Text style={styles.searchText}>Search restaurants, dishes...</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search restaurants or cuisines"
+              placeholderTextColor="#8A8A8E"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
+                <Ionicons name="close-circle" size={18} color="#8A8A8E" />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Categories */}
@@ -112,12 +159,33 @@ export default function CustomerHomeScreen({ navigation }) {
             <Text style={styles.sectionTitle}>Categories</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
+            <TouchableOpacity
+              style={[styles.categoryCard, selectedCategory === 'All' && styles.categoryCardActive]}
+              onPress={() => setSelectedCategory('All')}
+            >
+              <View style={[styles.categoryIconBg, selectedCategory === 'All' && styles.categoryIconBgActive]}>
+                <Ionicons name="grid-outline" size={24} color={selectedCategory === 'All' ? '#FFFFFF' : '#FF5C00'} />
+              </View>
+              <Text style={[styles.categoryName, selectedCategory === 'All' && styles.categoryNameActive]}>
+                All
+              </Text>
+            </TouchableOpacity>
             {CATEGORIES.map((cat) => (
-              <TouchableOpacity key={cat.id} style={styles.categoryCard}>
-                <View style={styles.categoryIconBg}>
-                  <Ionicons name={cat.icon} size={24} color="#FF5C00" />
+              <TouchableOpacity
+                key={cat.id}
+                style={[styles.categoryCard, selectedCategory === cat.name && styles.categoryCardActive]}
+                onPress={() => setSelectedCategory(cat.name)}
+              >
+                <View style={[styles.categoryIconBg, selectedCategory === cat.name && styles.categoryIconBgActive]}>
+                  <Ionicons
+                    name={cat.icon}
+                    size={24}
+                    color={selectedCategory === cat.name ? '#FFFFFF' : '#FF5C00'}
+                  />
                 </View>
-                <Text style={styles.categoryName}>{cat.name}</Text>
+                <Text style={[styles.categoryName, selectedCategory === cat.name && styles.categoryNameActive]}>
+                  {cat.name}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -130,11 +198,29 @@ export default function CustomerHomeScreen({ navigation }) {
           {isLoading ? (
             <ActivityIndicator size="large" color="#FF5C00" style={{ marginTop: 20 }} />
           ) : error ? (
-            <Text style={styles.errorText}>{error}</Text>
-          ) : restaurants.length === 0 ? (
-            <Text style={styles.emptyText}>No active restaurants available right now.</Text>
+            <View style={styles.stateCard}>
+              <Ionicons name="warning-outline" size={28} color="#D9383A" />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity onPress={fetchRestaurants} style={styles.retryBtn}>
+                <Text style={styles.retryBtnText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredRestaurants.length === 0 ? (
+            <View style={styles.stateCard}>
+              <Ionicons name="search-outline" size={28} color="#8A8A8E" />
+              <Text style={styles.emptyText}>No restaurants match your search.</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('All');
+                }}
+                style={styles.retryBtn}
+              >
+                <Text style={styles.retryBtnText}>Clear Filters</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
-            restaurants.map((res) => (
+            filteredRestaurants.map((res) => (
               <TouchableOpacity
                 key={res.id}
                 style={styles.restaurantCard}
@@ -144,7 +230,7 @@ export default function CustomerHomeScreen({ navigation }) {
                 <Image source={{ uri: res.image }} style={styles.restaurantImage} />
                 <View style={styles.restaurantInfo}>
                   <View style={styles.restaurantTitleRow}>
-                    <Text style={styles.restaurantName}>{res.name}</Text>
+                    <Text style={styles.restaurantName} numberOfLines={1}>{res.name}</Text>
                     <View style={styles.ratingBadge}>
                       <Ionicons name="star" size={14} color="#FFD60A" />
                       <Text style={styles.ratingText}>{res.rating > 0 ? res.rating.toFixed(1) : 'N/A'}</Text>
@@ -202,6 +288,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1E1E24',
     marginHorizontal: 4,
+    flexShrink: 1,
   },
   logoutBtn: {
     width: 40,
@@ -284,9 +371,14 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: 12,
   },
-  searchText: {
-    color: '#8A8A8E',
+  searchInput: {
+    flex: 1,
+    color: '#1E1E24',
     fontSize: 15,
+    height: '100%',
+  },
+  clearSearchBtn: {
+    padding: 4,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -306,7 +398,11 @@ const styles = StyleSheet.create({
   categoryCard: {
     alignItems: 'center',
     marginRight: 16,
-    width: 72,
+    width: 76,
+    paddingVertical: 2,
+  },
+  categoryCardActive: {
+    transform: [{ translateY: -1 }],
   },
   categoryIconBg: {
     width: 56,
@@ -317,10 +413,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  categoryIconBgActive: {
+    backgroundColor: '#FF5C00',
+  },
   categoryName: {
     fontSize: 12,
     fontWeight: '600',
     color: '#495057',
+    textAlign: 'center',
+  },
+  categoryNameActive: {
+    color: '#FF5C00',
+    fontWeight: '800',
   },
   restaurantCard: {
     backgroundColor: '#FFFFFF',
@@ -351,6 +455,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1E1E24',
+    flex: 1,
+    marginRight: 10,
   },
   ratingBadge: {
     flexDirection: 'row',
@@ -403,11 +509,32 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#D9383A',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 10,
+    lineHeight: 20,
   },
   emptyText: {
     color: '#8A8A8E',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 10,
+    lineHeight: 20,
+  },
+  stateCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  retryBtn: {
+    marginTop: 14,
+    backgroundColor: '#FF5C00',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  retryBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 13,
   },
 });

@@ -8,38 +8,46 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, decrementQuantity, incrementQuantity } from '../../store/slices/cartSlice';
 import api from '../../lib/api';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
-
 export default function RestaurantMenuScreen({ route, navigation }) {
   const { restaurant } = route.params;
   const [menuItems, setMenuItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart);
 
+  const fetchMenu = async () => {
+    try {
+      setError(null);
+      const response = await api.get(`/api/customer/restaurants/${restaurant.id}/menu`);
+      setMenuItems(response.data);
+    } catch (err) {
+      const message = err.response?.data?.error || err.message || 'Failed to load menu. Please try again.';
+      setError(message);
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchMenu = async () => {
-      try {
-        const response = await api.get(`/api/customer/restaurants/${restaurant.id}/menu`);
-        setMenuItems(response.data);
-      } catch (err) {
-        setError('Failed to load menu. Please try again.');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchMenu();
   }, [restaurant.id]);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchMenu();
+  };
 
   const handleAddItem = (item) => {
     dispatch(
@@ -64,7 +72,14 @@ export default function RestaurantMenuScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header Image & Info */}
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#FF5C00" />
+        }
+      >
         <View style={styles.headerImageContainer}>
           <Image source={{ uri: restaurant.image }} style={styles.headerImage} />
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -79,7 +94,7 @@ export default function RestaurantMenuScreen({ route, navigation }) {
           <View style={styles.metaRow}>
             <View style={styles.ratingBadge}>
               <Ionicons name="star" size={14} color="#FFD60A" />
-              <Text style={styles.ratingText}>{restaurant.rating.toFixed(1)}</Text>
+              <Text style={styles.ratingText}>{restaurant.rating > 0 ? restaurant.rating.toFixed(1) : 'N/A'}</Text>
             </View>
             <Text style={styles.metaDivider}>•</Text>
             <Text style={styles.metaText}>Free Delivery</Text>
@@ -93,9 +108,18 @@ export default function RestaurantMenuScreen({ route, navigation }) {
           {isLoading ? (
             <ActivityIndicator size="large" color="#FF5C00" style={{ marginTop: 40 }} />
           ) : error ? (
-            <Text style={styles.errorText}>{error}</Text>
+            <View style={styles.stateCard}>
+              <Ionicons name="warning-outline" size={28} color="#D9383A" />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity onPress={fetchMenu} style={styles.retryBtn}>
+                <Text style={styles.retryBtnText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
           ) : menuItems.length === 0 ? (
-            <Text style={styles.emptyText}>No menu items available for this restaurant yet.</Text>
+            <View style={styles.stateCard}>
+              <Ionicons name="restaurant-outline" size={28} color="#8A8A8E" />
+              <Text style={styles.emptyText}>No menu items available for this restaurant yet.</Text>
+            </View>
           ) : (
             menuItems.map((item) => {
               const qty = getCartQty(item.id);
@@ -106,7 +130,7 @@ export default function RestaurantMenuScreen({ route, navigation }) {
                     <Text style={styles.itemDesc} numberOfLines={2}>
                       {item.description}
                     </Text>
-                    <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+                    <Text style={styles.itemPrice}>${Number(item.price).toFixed(2)}</Text>
                   </View>
 
                   <View style={styles.itemActionContainer}>
@@ -184,7 +208,7 @@ const styles = StyleSheet.create({
   headerImage: {
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
+    resizeMode: 'cover',
   },
   backBtn: {
     position: 'absolute',
@@ -217,6 +241,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: '#1E1E24',
+    lineHeight: 30,
   },
   restaurantCuisine: {
     fontSize: 14,
@@ -267,6 +292,7 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 16,
     shadowColor: '#1E1E24',
     shadowOffset: { width: 0, height: 2 },
@@ -282,6 +308,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1E1E24',
+    lineHeight: 21,
   },
   itemDesc: {
     fontSize: 12,
@@ -386,8 +413,7 @@ const styles = StyleSheet.create({
   viewCartText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '850',
-    letterSpacing: 0.5,
+    fontWeight: '800',
   },
   cartTotalText: {
     color: '#FFFFFF',
@@ -397,11 +423,31 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#D9383A',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 10,
+    lineHeight: 20,
   },
   emptyText: {
     color: '#8A8A8E',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 10,
+    lineHeight: 20,
+  },
+  stateCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+  },
+  retryBtn: {
+    marginTop: 14,
+    backgroundColor: '#FF5C00',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  retryBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 13,
   },
 });

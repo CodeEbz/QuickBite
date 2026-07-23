@@ -9,6 +9,7 @@ import {
   Switch,
   Animated,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
@@ -20,6 +21,8 @@ export default function DriverHomeScreen() {
   const [availableOrders, setAvailableOrders] = useState([]);
   const [activeOrder, setActiveOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const [completedCount, setCompletedCount] = useState(0);
 
   const dispatch = useDispatch();
@@ -52,21 +55,31 @@ export default function DriverHomeScreen() {
 
   // Fetch Available & Active Orders
   const fetchDriverData = async () => {
-    if (!isOnline) return;
+    if (!isOnline) {
+      setIsRefreshing(false);
+      setError(null);
+      return;
+    }
     try {
+      setError(null);
       // 1. Fetch current active order
       const activeRes = await api.get('/api/driver/orders/my-active');
-      setActiveOrder(activeRes.data);
+      const currentOrder = activeRes.data || null;
+      setActiveOrder(currentOrder);
 
       // 2. Fetch available orders nearby if not currently carrying an order
-      if (!activeRes.data) {
+      if (!currentOrder) {
         const availRes = await api.get('/api/driver/orders/available');
-        setAvailableOrders(availRes.data);
+        setAvailableOrders(Array.isArray(availRes.data) ? availRes.data : []);
       } else {
         setAvailableOrders([]);
       }
     } catch (err) {
+      const message = err.response?.data?.error || err.message || 'Unable to load driver orders.';
+      setError(message);
       console.error('Error loading driver data:', err);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -79,11 +92,14 @@ export default function DriverHomeScreen() {
   const handleAcceptOrder = async (id) => {
     setIsLoading(true);
     try {
+      setError(null);
       const response = await api.put(`/api/driver/orders/${id}/accept`);
       setActiveOrder(response.data);
       setAvailableOrders((prev) => prev.filter((o) => o.id !== id));
     } catch (err) {
-      alert('Failed to accept order. It may have been taken by another driver.');
+      const message = err.response?.data?.error || 'Failed to accept order. It may have been taken by another driver.';
+      setError(message);
+      alert(message);
       fetchDriverData();
     } finally {
       setIsLoading(false);
@@ -93,13 +109,16 @@ export default function DriverHomeScreen() {
   const handleCompleteOrder = async (id) => {
     setIsLoading(true);
     try {
+      setError(null);
       await api.put(`/api/driver/orders/${id}/complete`);
       setActiveOrder(null);
       setCompletedCount((prev) => prev + 1);
       alert('Delivery Completed! Earnings updated.');
       fetchDriverData();
     } catch (err) {
-      alert('Failed to complete delivery.');
+      const message = err.response?.data?.error || 'Failed to complete delivery.';
+      setError(message);
+      alert(message);
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +126,11 @@ export default function DriverHomeScreen() {
 
   const handleLogout = () => {
     dispatch(logout());
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchDriverData();
   };
 
   return (
@@ -122,7 +146,14 @@ export default function DriverHomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#FF5C00" />
+        }
+      >
         {/* Status Dashboard */}
         <View style={styles.dashboardCard}>
           <View style={styles.statusRow}>
@@ -158,6 +189,16 @@ export default function DriverHomeScreen() {
           </View>
         </View>
 
+        {error && (
+          <View style={styles.errorCard}>
+            <Ionicons name="warning-outline" size={20} color="#D9383A" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity onPress={fetchDriverData} style={styles.inlineRetryBtn}>
+              <Text style={styles.inlineRetryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* ACTIVE DELIVERY HUD */}
         {activeOrder ? (
           <View style={styles.activeHudCard}>
@@ -181,7 +222,7 @@ export default function DriverHomeScreen() {
 
               <View style={styles.payoutRow}>
                 <Text style={styles.payoutLabel}>Total Delivery Payout</Text>
-                <Text style={styles.payoutValue}>${activeOrder.totalPrice.toFixed(2)}</Text>
+                <Text style={styles.payoutValue}>${Number(activeOrder.totalPrice).toFixed(2)}</Text>
               </View>
             </View>
 
@@ -239,7 +280,15 @@ export default function DriverHomeScreen() {
             </View>
             
             {availableOrders.length === 0 ? (
-              <Text style={styles.emptyText}>No available orders right now. Orders placed by customers will appear here live!</Text>
+              <View style={styles.emptyCard}>
+                <Ionicons name="radio-outline" size={30} color="#FF5C00" />
+                <Text style={styles.emptyTitle}>No orders waiting</Text>
+                <Text style={styles.emptyText}>New customer orders appear here as soon as they are placed.</Text>
+                <TouchableOpacity onPress={fetchDriverData} style={styles.refreshBtn}>
+                  <Ionicons name="reload" size={16} color="#FFFFFF" />
+                  <Text style={styles.refreshBtnText}>Refresh Board</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               availableOrders.map((job) => (
                 <View key={job.id} style={styles.jobCard}>
@@ -248,7 +297,7 @@ export default function DriverHomeScreen() {
                       <Ionicons name="restaurant" size={14} color="#FF5C00" />
                       <Text style={styles.jobResName}>{job.restaurant?.name || 'Partner Restaurant'}</Text>
                     </View>
-                    <Text style={styles.jobPayout}>${job.totalPrice.toFixed(2)}</Text>
+                    <Text style={styles.jobPayout}>${Number(job.totalPrice).toFixed(2)}</Text>
                   </View>
 
                   <Text style={styles.jobCustomer}>Customer: {job.customerName}</Text>
@@ -302,6 +351,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1E1E24',
     marginTop: 2,
+    maxWidth: 240,
   },
   logoutBtn: {
     width: 40,
@@ -488,7 +538,7 @@ const styles = StyleSheet.create({
   payoutValue: {
     color: '#2B8A3E',
     fontSize: 18,
-    fontWeight: '850',
+    fontWeight: '800',
   },
   completeBtn: {
     backgroundColor: '#2B8A3E',
@@ -514,6 +564,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#1E1E24',
+    flex: 1,
+    marginRight: 12,
   },
   jobCard: {
     backgroundColor: '#FFFFFF',
@@ -540,12 +592,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+    flex: 1,
+    marginRight: 10,
   },
   jobResName: {
     fontSize: 13,
     fontWeight: '700',
     color: '#FF5C00',
     marginLeft: 6,
+    flex: 1,
   },
   jobPayout: {
     fontSize: 15,
@@ -582,5 +637,60 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 20,
     fontSize: 13,
+    lineHeight: 19,
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    color: '#1E1E24',
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 10,
+  },
+  refreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF5C00',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  refreshBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    marginLeft: 6,
+  },
+  errorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF2F2',
+    borderWidth: 1,
+    borderColor: '#FFE0E0',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 18,
+  },
+  errorText: {
+    color: '#D9383A',
+    fontSize: 12,
+    lineHeight: 17,
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  inlineRetryBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  inlineRetryText: {
+    color: '#D9383A',
+    fontSize: 12,
+    fontWeight: '800',
   },
 });
