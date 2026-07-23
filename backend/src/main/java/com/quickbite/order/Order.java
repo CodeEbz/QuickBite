@@ -39,7 +39,7 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<OrderItem> items = new ArrayList<>();
 
-    public enum Status { PENDING, PREPARING, DELIVERING, DELIVERED, CANCELLED }
+    public enum Status { PENDING, PREPARING, READY, DELIVERING, DELIVERED, CANCELLED }
 
     // Getters and Setters
     public Long getId() { return id; }

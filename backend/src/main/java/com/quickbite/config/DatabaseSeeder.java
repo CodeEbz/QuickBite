@@ -48,22 +48,23 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedMerchantUsers() {
-        seedMerchantUser("John Smith", "john@burgerpalace.com");
-        seedMerchantUser("Marco Rossi", "marco@pizzadiroma.com");
-        seedMerchantUser("Yuki Tanaka", "yuki@sushizen.com");
-        seedMerchantUser("Laura Vance", "laura@gourmetgrill.com");
+        seedUser("John Smith", "john@burgerpalace.com", User.Role.RESTAURANT);
+        seedUser("Marco Rossi", "marco@pizzadiroma.com", User.Role.RESTAURANT);
+        seedUser("Yuki Tanaka", "yuki@sushizen.com", User.Role.RESTAURANT);
+        seedUser("Laura Vance", "laura@gourmetgrill.com", User.Role.RESTAURANT);
+        seedUser("David Miller", "david@driver.com", User.Role.DRIVER);
     }
 
-    private void seedMerchantUser(String name, String email) {
+    private void seedUser(String name, String email, User.Role role) {
         if (!userRepository.existsByEmail(email)) {
             User user = new User();
             user.setName(name);
             user.setEmail(email);
             user.setPassword(passwordEncoder.encode("AdminPassword2026!"));
-            user.setRole(User.Role.RESTAURANT);
+            user.setRole(role);
             user.setVerified(true);
             userRepository.save(user);
-            System.out.println("Seeded merchant user account: " + email);
+            System.out.println("Seeded user account (" + role + "): " + email);
         }
     }
 

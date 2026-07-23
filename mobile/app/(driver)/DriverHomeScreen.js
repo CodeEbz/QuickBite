@@ -8,19 +8,27 @@ import {
   TouchableOpacity,
   Switch,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
+import api from '../../lib/api';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function DriverHomeScreen() {
   const [isOnline, setIsOnline] = useState(true);
+  const [availableOrders, setAvailableOrders] = useState([]);
+  const [activeOrder, setActiveOrder] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [completedCount, setCompletedCount] = useState(0);
+
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
 
   // Animations
   const mapPulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Radar Pulsing Animation
   useEffect(() => {
     if (isOnline) {
       Animated.loop(
@@ -42,35 +50,71 @@ export default function DriverHomeScreen() {
     }
   }, [isOnline]);
 
+  // Fetch Available & Active Orders
+  const fetchDriverData = async () => {
+    if (!isOnline) return;
+    try {
+      // 1. Fetch current active order
+      const activeRes = await api.get('/api/driver/orders/my-active');
+      setActiveOrder(activeRes.data);
+
+      // 2. Fetch available orders nearby if not currently carrying an order
+      if (!activeRes.data) {
+        const availRes = await api.get('/api/driver/orders/available');
+        setAvailableOrders(availRes.data);
+      } else {
+        setAvailableOrders([]);
+      }
+    } catch (err) {
+      console.error('Error loading driver data:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDriverData();
+    const interval = setInterval(fetchDriverData, 5000);
+    return () => clearInterval(interval);
+  }, [isOnline]);
+
+  const handleAcceptOrder = async (id) => {
+    setIsLoading(true);
+    try {
+      const response = await api.put(`/api/driver/orders/${id}/accept`);
+      setActiveOrder(response.data);
+      setAvailableOrders((prev) => prev.filter((o) => o.id !== id));
+    } catch (err) {
+      alert('Failed to accept order. It may have been taken by another driver.');
+      fetchDriverData();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCompleteOrder = async (id) => {
+    setIsLoading(true);
+    try {
+      await api.put(`/api/driver/orders/${id}/complete`);
+      setActiveOrder(null);
+      setCompletedCount((prev) => prev + 1);
+      alert('Delivery Completed! Earnings updated.');
+      fetchDriverData();
+    } catch (err) {
+      alert('Failed to complete delivery.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     dispatch(logout());
   };
-
-  const MOCK_JOBS = [
-    {
-      id: 1,
-      restaurant: 'Burger Palace',
-      distance: '1.2 miles away',
-      payout: '$8.50 + $3.00 tip',
-      pickup: '123 Diner Row',
-      dropoff: '542 Oak Avenue',
-    },
-    {
-      id: 2,
-      restaurant: 'Pizza Di Roma',
-      distance: '2.5 miles away',
-      payout: '$12.00',
-      pickup: '88 Italian Plaza',
-      dropoff: '109 Pine Lane',
-    },
-  ];
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.roleTag}>Driver Mode</Text>
+          <Text style={styles.roleTag}>Driver Courier</Text>
           <Text style={styles.userName}>{user?.name || 'Driver Partner'}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
@@ -100,11 +144,11 @@ export default function DriverHomeScreen() {
 
           <View style={styles.statsRow}>
             <View style={styles.statCol}>
-              <Text style={styles.statValue}>$48.50</Text>
+              <Text style={styles.statValue}>${(completedCount * 12.50).toFixed(2)}</Text>
               <Text style={styles.statLabel}>Today's Pay</Text>
             </View>
             <View style={styles.statCol}>
-              <Text style={styles.statValue}>4</Text>
+              <Text style={styles.statValue}>{completedCount}</Text>
               <Text style={styles.statLabel}>Deliveries</Text>
             </View>
             <View style={styles.statCol}>
@@ -114,71 +158,116 @@ export default function DriverHomeScreen() {
           </View>
         </View>
 
-        {/* Map Simulator */}
-        <View style={styles.mapSimulator}>
-          {isOnline ? (
-            <View style={styles.mapPulseContainer}>
-              <Animated.View
-                style={[
-                  styles.mapPulseRing,
-                  { transform: [{ scale: mapPulseAnim }] },
-                ]}
-              />
-              <View style={styles.mapPulseDot}>
-                <Ionicons name="bicycle" size={22} color="#FFFFFF" />
+        {/* ACTIVE DELIVERY HUD */}
+        {activeOrder ? (
+          <View style={styles.activeHudCard}>
+            <View style={styles.activeHudHeader}>
+              <View style={styles.hudBadge}>
+                <Ionicons name="navigate-circle" size={18} color="#FFFFFF" />
+                <Text style={styles.hudBadgeText}>DELIVERY IN TRANSIT</Text>
               </View>
-              <Text style={styles.radarText}>Searching for orders nearby...</Text>
+              <Text style={styles.activeOrderId}>#QB-{activeOrder.id}</Text>
             </View>
-          ) : (
-            <View style={styles.mapPulseContainer}>
-              <View style={[styles.mapPulseDot, { backgroundColor: '#8A8A8E' }]}>
-                <Ionicons name="moon" size={22} color="#FFFFFF" />
-              </View>
-              <Text style={styles.radarText}>Go online to start earning</Text>
-            </View>
-          )}
-        </View>
 
-        {/* Nearby Jobs */}
-        {isOnline && (
+            <View style={styles.hudDetails}>
+              <Text style={styles.hudResName}>{activeOrder.restaurant?.name || 'Restaurant'}</Text>
+              <Text style={styles.hudCustomer}>Customer: <Text style={{ fontWeight: '800', color: '#1E1E24' }}>{activeOrder.customerName}</Text></Text>
+              
+              <View style={styles.itemsSummary}>
+                <Text style={styles.itemsSummaryText}>
+                  {activeOrder.items?.map((i) => `${i.quantity}x ${i.itemName}`).join(', ')}
+                </Text>
+              </View>
+
+              <View style={styles.payoutRow}>
+                <Text style={styles.payoutLabel}>Total Delivery Payout</Text>
+                <Text style={styles.payoutValue}>${activeOrder.totalPrice.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => handleCompleteOrder(activeOrder.id)}
+              disabled={isLoading}
+              style={styles.completeBtn}
+              activeOpacity={0.9}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Text style={styles.completeBtnText}>Confirm Handed to Customer</Text>
+                  <Ionicons name="checkmark-done-circle" size={22} color="#FFFFFF" style={{ marginLeft: 6 }} />
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : (
+          /* MAP RADAR SIMULATOR */
+          <View style={styles.mapSimulator}>
+            {isOnline ? (
+              <View style={styles.mapPulseContainer}>
+                <Animated.View
+                  style={[
+                    styles.mapPulseRing,
+                    { transform: [{ scale: mapPulseAnim }] },
+                  ]}
+                />
+                <View style={styles.mapPulseDot}>
+                  <Ionicons name="bicycle" size={22} color="#FFFFFF" />
+                </View>
+                <Text style={styles.radarText}>Searching for customer orders nearby...</Text>
+              </View>
+            ) : (
+              <View style={styles.mapPulseContainer}>
+                <View style={[styles.mapPulseDot, { backgroundColor: '#8A8A8E' }]}>
+                  <Ionicons name="moon" size={22} color="#FFFFFF" />
+                </View>
+                <Text style={styles.radarText}>Go online to start earning</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* NEARBY AVAILABLE OFFERS */}
+        {isOnline && !activeOrder && (
           <View style={styles.jobsSection}>
-            <Text style={styles.sectionTitle}>Active Offers Nearby</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Available Orders Nearby ({availableOrders.length})</Text>
+              <TouchableOpacity onPress={fetchDriverData}>
+                <Ionicons name="reload" size={18} color="#FF5C00" />
+              </TouchableOpacity>
+            </View>
             
-            {MOCK_JOBS.map((job) => (
-              <View key={job.id} style={styles.jobCard}>
-                <View style={styles.jobHeader}>
-                  <View style={styles.restaurantBadge}>
-                    <Ionicons name="restaurant" size={14} color="#FF5C00" />
-                    <Text style={styles.jobResName}>{job.restaurant}</Text>
+            {availableOrders.length === 0 ? (
+              <Text style={styles.emptyText}>No available orders right now. Orders placed by customers will appear here live!</Text>
+            ) : (
+              availableOrders.map((job) => (
+                <View key={job.id} style={styles.jobCard}>
+                  <View style={styles.jobHeader}>
+                    <View style={styles.restaurantBadge}>
+                      <Ionicons name="restaurant" size={14} color="#FF5C00" />
+                      <Text style={styles.jobResName}>{job.restaurant?.name || 'Partner Restaurant'}</Text>
+                    </View>
+                    <Text style={styles.jobPayout}>${job.totalPrice.toFixed(2)}</Text>
                   </View>
-                  <Text style={styles.jobPayout}>{job.payout}</Text>
+
+                  <Text style={styles.jobCustomer}>Customer: {job.customerName}</Text>
+                  <Text style={styles.jobItems} numberOfLines={2}>
+                    {job.items?.map((i) => `${i.quantity}x ${i.itemName}`).join(', ')}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={() => handleAcceptOrder(job.id)}
+                    disabled={isLoading}
+                    style={styles.acceptBtn}
+                    activeOpacity={0.9}
+                  >
+                    <Text style={styles.acceptBtnText}>Accept Offer</Text>
+                    <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" style={{ marginLeft: 6 }} />
+                  </TouchableOpacity>
                 </View>
-
-                <Text style={styles.jobDistance}>{job.distance}</Text>
-
-                <View style={styles.routeContainer}>
-                  <View style={styles.routeDots}>
-                    <View style={styles.dotGreen} />
-                    <View style={styles.dotLine} />
-                    <View style={styles.dotRed} />
-                  </View>
-                  <View style={styles.routeDetails}>
-                    <Text style={styles.routeText} numberOfLines={1}>
-                      <Text style={styles.routeLabel}>Pick:</Text> {job.pickup}
-                    </Text>
-                    <View style={{ height: 16 }} />
-                    <Text style={styles.routeText} numberOfLines={1}>
-                      <Text style={styles.routeLabel}>Drop:</Text> {job.dropoff}
-                    </Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity style={styles.acceptBtn} activeOpacity={0.9}>
-                  <Text style={styles.acceptBtnText}>Accept Offer</Text>
-                  <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" style={{ marginLeft: 6 }} />
-                </TouchableOpacity>
-              </View>
-            ))}
+              ))
+            )}
           </View>
         )}
       </ScrollView>
@@ -324,12 +413,107 @@ const styles = StyleSheet.create({
     color: '#6C757D',
     marginTop: 16,
   },
+  activeHudCard: {
+    backgroundColor: '#1E1E24',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#1E1E24',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  activeHudHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  hudBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2B8A3E',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  hudBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    marginLeft: 6,
+  },
+  activeOrderId: {
+    color: '#FF5C00',
+    fontWeight: '800',
+    fontSize: 14,
+  },
+  hudDetails: {
+    backgroundColor: '#2A2A32',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  hudResName: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  hudCustomer: {
+    color: '#A0A0AB',
+    fontSize: 13,
+    marginTop: 4,
+  },
+  itemsSummary: {
+    backgroundColor: '#1E1E24',
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 10,
+  },
+  itemsSummaryText: {
+    color: '#D4D4D8',
+    fontSize: 12,
+  },
+  payoutRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  payoutLabel: {
+    color: '#A0A0AB',
+    fontSize: 12,
+  },
+  payoutValue: {
+    color: '#2B8A3E',
+    fontSize: 18,
+    fontWeight: '850',
+  },
+  completeBtn: {
+    backgroundColor: '#2B8A3E',
+    borderRadius: 16,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  completeBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
   jobsSection: {},
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: '#1E1E24',
-    marginBottom: 16,
   },
   jobCard: {
     backgroundColor: '#FFFFFF',
@@ -368,50 +552,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#2B8A3E',
   },
-  jobDistance: {
-    fontSize: 12,
-    color: '#8A8A8E',
-    marginTop: 8,
-    marginBottom: 14,
-  },
-  routeContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  routeDots: {
-    width: 12,
-    alignItems: 'center',
-    marginRight: 10,
-    paddingVertical: 4,
-  },
-  dotGreen: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#2B8A3E',
-  },
-  dotLine: {
-    width: 2,
-    flex: 1,
-    backgroundColor: '#CED4DA',
-    marginVertical: 4,
-  },
-  dotRed: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#D9383A',
-  },
-  routeDetails: {
-    flex: 1,
-  },
-  routeText: {
+  jobCustomer: {
     fontSize: 13,
-    color: '#495057',
-  },
-  routeLabel: {
     fontWeight: '700',
     color: '#1E1E24',
+    marginTop: 8,
+  },
+  jobItems: {
+    fontSize: 12,
+    color: '#8A8A8E',
+    marginTop: 4,
+    marginBottom: 14,
   },
   acceptBtn: {
     backgroundColor: '#FF5C00',
@@ -425,5 +576,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
+  },
+  emptyText: {
+    color: '#8A8A8E',
+    textAlign: 'center',
+    marginVertical: 20,
+    fontSize: 13,
   },
 });
