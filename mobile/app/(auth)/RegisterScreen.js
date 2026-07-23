@@ -19,7 +19,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const ROLES = [
   { id: 'CUSTOMER', label: 'Customer', desc: 'Order delicious food', icon: 'cart-outline' },
   { id: 'DRIVER', label: 'Driver', desc: 'Deliver & earn money', icon: 'bicycle-outline' },
-  { id: 'RESTAURANT', label: 'Restaurant', desc: 'Manage food & orders', icon: 'storefront-outline' },
 ];
 
 export default function RegisterScreen({ navigation }) {
@@ -73,7 +72,7 @@ export default function RegisterScreen({ navigation }) {
     ]).start();
   }, [dispatch]);
 
-  // Watch for successful registration and route to OTP
+  // Watch for successful registration and route to OTP when verification is required.
   useEffect(() => {
     if (registerStatus === 'success') {
       navigation.navigate('VerifyOtp');

@@ -14,8 +14,13 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody AuthDtos.RegisterRequest req) {
+    public ResponseEntity<AuthDtos.RegisterResponse> register(@RequestBody AuthDtos.RegisterRequest req) {
         return ResponseEntity.ok(authService.register(req));
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<String> resendOtp(@RequestBody AuthDtos.LoginRequest req) {
+        return ResponseEntity.ok(authService.resendOtp(req.email()));
     }
 
     @PostMapping("/register-merchant")

@@ -11,4 +11,6 @@ public class AuthDtos {
     public record VerifyOtpRequest(String email, String otp) {}
 
     public record AuthResponse(String token, String role, String name, String profileImage) {}
+
+    public record RegisterResponse(String message, String email, Boolean requiresOtp, AuthResponse auth) {}
 }

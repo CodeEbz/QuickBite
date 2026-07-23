@@ -7,6 +7,7 @@ import com.quickbite.user.UserRepository;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -20,23 +21,31 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final JavaMailSender mailSender;
+    private final boolean autoVerifySignups;
 
     public AuthService(UserRepository userRepository, RestaurantRepository restaurantRepository,
-                       PasswordEncoder passwordEncoder, JwtUtil jwtUtil, JavaMailSender mailSender) {
+                       PasswordEncoder passwordEncoder,
+                       JwtUtil jwtUtil,
+                       JavaMailSender mailSender,
+                       @Value("${auth.auto-verify-signups:false}") boolean autoVerifySignups) {
         this.userRepository = userRepository;
         this.restaurantRepository = restaurantRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.mailSender = mailSender;
+        this.autoVerifySignups = autoVerifySignups;
     }
 
-    public String register(AuthDtos.RegisterRequest req) {
+    public AuthDtos.RegisterResponse register(AuthDtos.RegisterRequest req) {
         if (userRepository.existsByEmail(req.email()))
             throw new RuntimeException("Email already in use");
 
         User.Role requestedRole = User.Role.valueOf(req.role().toUpperCase());
         if (requestedRole == User.Role.ADMIN) {
             throw new RuntimeException("Admin accounts cannot be created from public signup.");
+        }
+        if (requestedRole == User.Role.RESTAURANT) {
+            throw new RuntimeException("Use merchant registration to create a restaurant account.");
         }
 
         User user = new User();
@@ -45,14 +54,20 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(req.password()));
         user.setRole(requestedRole);
 
-        String otp = generateOtp();
-        user.setOtp(otp);
-        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
+        if (autoVerifySignups) {
+            user.setVerified(true);
+            userRepository.save(user);
+            String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+            AuthDtos.AuthResponse auth = new AuthDtos.AuthResponse(token, user.getRole().name(), user.getName(), user.getProfileImage());
+            return new AuthDtos.RegisterResponse("Registration successful.", user.getEmail(), false, auth);
+        }
+
+        setOtp(user);
 
         userRepository.save(user);
-        sendOtp(user.getEmail(), otp);
+        sendOtp(user.getEmail(), user.getOtp());
 
-        return "Registration successful. Check your email for OTP.";
+        return new AuthDtos.RegisterResponse("Registration successful. Check your email for OTP.", user.getEmail(), true, null);
     }
 
     public AuthDtos.AuthResponse registerMerchant(AuthDtos.RegisterMerchantRequest req) {
@@ -104,6 +119,18 @@ public class AuthService {
         return "Email verified successfully";
     }
 
+    public String resendOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.isVerified()) {
+            return "Account is already verified.";
+        }
+        setOtp(user);
+        userRepository.save(user);
+        sendOtp(user.getEmail(), user.getOtp());
+        return "A new verification code has been sent.";
+    }
+
     public AuthDtos.AuthResponse login(AuthDtos.LoginRequest req) {
         User user = userRepository.findByEmail(req.email())
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
@@ -120,6 +147,12 @@ public class AuthService {
 
     private String generateOtp() {
         return String.valueOf(new Random().nextInt(900000) + 100000);
+    }
+
+    private void setOtp(User user) {
+        String otp = generateOtp();
+        user.setOtp(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
     }
 
     private void sendOtp(String email, String otp) {

@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { verifyOtp, clearErrors, resetRegisterStatus } from '../../store/slices/authSlice';
+import { verifyOtp, resendOtp, clearErrors, resetRegisterStatus } from '../../store/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -66,6 +66,11 @@ export default function VerifyOtpScreen({ navigation }) {
       return;
     }
     dispatch(verifyOtp({ email: emailInput.trim(), otp: otpCode }));
+  };
+
+  const handleResend = () => {
+    if (!emailInput.trim()) return;
+    dispatch(resendOtp({ email: emailInput.trim() }));
   };
 
   const handlePressIn = () => {
@@ -227,7 +232,7 @@ export default function VerifyOtpScreen({ navigation }) {
               </Animated.View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.resendBtn}>
+            <TouchableOpacity onPress={handleResend} disabled={isLoading} style={styles.resendBtn}>
               <Text style={styles.resendBtnText}>Resend Code</Text>
             </TouchableOpacity>
           </View>

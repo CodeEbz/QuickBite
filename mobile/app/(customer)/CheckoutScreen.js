@@ -14,6 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { clearCart } from '../../store/slices/cartSlice';
 import api from '../../lib/api';
 import * as ExpoLinking from 'expo-linking';
+import { getDefaultAddress } from '../../lib/addressStorage';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function CheckoutScreen({ route, navigation }) {
@@ -24,11 +25,16 @@ export default function CheckoutScreen({ route, navigation }) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [payment, setPayment] = useState(null);
   const [paymentBrowserOpened, setPaymentBrowserOpened] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
 
   const subtotal = cart.totalPrice;
   const deliveryFee = 2.50;
   const tax = subtotal * 0.08;
   const total = subtotal + deliveryFee + tax;
+
+  useEffect(() => {
+    getDefaultAddress().then(setDeliveryAddress).catch(() => {});
+  }, []);
 
   const buildOrderPayload = () => ({
     restaurantId: restaurant.id,
@@ -135,13 +141,13 @@ export default function CheckoutScreen({ route, navigation }) {
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Delivery Location</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('CustomerHome', { openProfile: true })}>
               <Text style={styles.editBtnText}>Edit</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.addressRow}>
             <Ionicons name="location-outline" size={20} color="#FF5C00" style={styles.addressIcon} />
-            <Text style={styles.addressText}>123 Main Street, Cityville (Apt 4B)</Text>
+            <Text style={styles.addressText}>{deliveryAddress || 'Loading delivery address...'}</Text>
           </View>
         </View>
 

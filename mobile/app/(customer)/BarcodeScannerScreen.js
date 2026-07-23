@@ -1,98 +1,169 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
+import { pickImageFromLibrary } from '../../lib/imageUpload';
 import { Ionicons } from '@expo/vector-icons';
 
+const FOOD_HINTS = [
+  { label: 'Burger', query: 'Burgers', icon: 'fast-food-outline' },
+  { label: 'Pizza', query: 'Pizza', icon: 'pizza-outline' },
+  { label: 'Sushi', query: 'Asian', icon: 'fish-outline' },
+  { label: 'Rice/Noodles', query: 'Asian', icon: 'restaurant-outline' },
+  { label: 'Dessert', query: 'Desserts', icon: 'ice-cream-outline' },
+  { label: 'Drink', query: 'Drinks', icon: 'beer-outline' },
+  { label: 'Grill', query: 'Grill', icon: 'flame-outline' },
+];
+
 export default function BarcodeScannerScreen({ navigation }) {
-  const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned] = useState(false);
-  const [lastCode, setLastCode] = useState('');
+  const [photo, setPhoto] = useState(null);
+  const [selectedHint, setSelectedHint] = useState(null);
+  const [error, setError] = useState(null);
 
-  if (!permission) {
-    return <SafeAreaView style={styles.center}><Text style={styles.muted}>Loading camera permission...</Text></SafeAreaView>;
-  }
+  const takePhoto = async () => {
+    try {
+      setError(null);
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        setError('Camera permission is required to snap a food photo.');
+        return;
+      }
 
-  if (!permission.granted) {
-    return (
-      <SafeAreaView style={styles.center}>
-        <Ionicons name="barcode-outline" size={44} color="#FF5C00" />
-        <Text style={styles.title}>Scan Food Codes</Text>
-        <Text style={styles.muted}>Allow camera access to scan food barcodes or QR codes.</Text>
-        <TouchableOpacity onPress={requestPermission} style={styles.primaryBtn}>
-          <Text style={styles.primaryText}>Allow Camera</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.82,
+      });
+      if (!result.canceled && result.assets?.length) {
+        setPhoto(result.assets[0]);
+      }
+    } catch (err) {
+      setError(err.message || 'Unable to open camera.');
+    }
+  };
 
-  const handleScanned = ({ data }) => {
-    if (scanned) return;
-    setScanned(true);
-    setLastCode(data);
+  const uploadPhoto = async () => {
+    try {
+      setError(null);
+      const asset = await pickImageFromLibrary();
+      if (asset) setPhoto(asset);
+    } catch (err) {
+      setError(err.message || 'Unable to choose image.');
+    }
+  };
+
+  const searchSimilar = () => {
+    const query = selectedHint?.query || 'All';
+    navigation.navigate('CustomerHome', { scannedCode: query });
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          <Ionicons name="arrow-back" size={22} color="#1E1E24" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Food Scanner</Text>
+        <Text style={styles.headerTitle}>Food Photo Search</Text>
         <View style={styles.iconBtn} />
       </View>
 
-      <CameraView
-        style={styles.camera}
-        facing="back"
-        barcodeScannerSettings={{ barcodeTypes: ['qr', 'ean13', 'ean8', 'upc_a', 'upc_e', 'code128'] }}
-        onBarcodeScanned={scanned ? undefined : handleScanned}
-      >
-        <View style={styles.scanBox}>
-          <View style={styles.corner} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.previewCard}>
+          {photo ? (
+            <Image source={{ uri: photo.uri }} style={styles.previewImage} />
+          ) : (
+            <View style={styles.previewEmpty}>
+              <Ionicons name="camera-outline" size={48} color="#FF5C00" />
+              <Text style={styles.previewTitle}>Snap or upload food</Text>
+              <Text style={styles.previewText}>Use a food picture to find similar meals in QuickBite.</Text>
+            </View>
+          )}
         </View>
-      </CameraView>
 
-      <View style={styles.bottomPanel}>
-        <Text style={styles.panelTitle}>{lastCode ? 'Code scanned' : 'Point camera at a code'}</Text>
-        <Text style={styles.panelText}>
-          {lastCode || 'Scan a food QR/barcode. QuickBite will use the result as a search term for now.'}
-        </Text>
-        {lastCode ? (
-          <View style={styles.actions}>
-            <TouchableOpacity onPress={() => { setScanned(false); setLastCode(''); }} style={styles.secondaryBtn}>
-              <Text style={styles.secondaryText}>Scan Again</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('CustomerHome', { scannedCode: lastCode })}
-              style={styles.primaryBtn}
-            >
-              <Text style={styles.primaryText}>Search Code</Text>
-            </TouchableOpacity>
+        <View style={styles.actionRow}>
+          <TouchableOpacity onPress={takePhoto} style={styles.primaryBtn}>
+            <Ionicons name="camera" size={18} color="#FFFFFF" />
+            <Text style={styles.primaryText}>Snap Food</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={uploadPhoto} style={styles.secondaryBtn}>
+            <Ionicons name="image-outline" size={18} color="#FF5C00" />
+            <Text style={styles.secondaryText}>Upload</Text>
+          </TouchableOpacity>
+        </View>
+
+        {error ? (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
-      </View>
+
+        <View style={styles.hintsCard}>
+          <Text style={styles.sectionTitle}>What does it look like?</Text>
+          <Text style={styles.sectionText}>Pick the closest match so we can search similar dishes.</Text>
+          <View style={styles.hintGrid}>
+            {FOOD_HINTS.map((hint) => {
+              const active = selectedHint?.label === hint.label;
+              return (
+                <TouchableOpacity
+                  key={hint.label}
+                  onPress={() => setSelectedHint(hint)}
+                  style={[styles.hintChip, active && styles.hintChipActive]}
+                >
+                  <Ionicons name={hint.icon} size={18} color={active ? '#FFFFFF' : '#FF5C00'} />
+                  <Text style={[styles.hintText, active && styles.hintTextActive]}>{hint.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <TouchableOpacity
+          onPress={searchSimilar}
+          disabled={!photo}
+          style={[styles.searchBtn, !photo && styles.searchBtnDisabled]}
+        >
+          <Text style={styles.searchText}>Find Similar Food</Text>
+          <Ionicons name="search" size={18} color="#FFFFFF" />
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111318' },
-  center: { flex: 1, backgroundColor: '#FAF9F6', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  header: { height: 62, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
-  iconBtn: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  camera: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scanBox: { width: 250, height: 250, borderRadius: 24, borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.04)' },
-  corner: { width: 60, height: 60, borderTopWidth: 5, borderLeftWidth: 5, borderColor: '#FF5C00', borderTopLeftRadius: 20, margin: -2 },
-  bottomPanel: { backgroundColor: '#FFFFFF', padding: 20, borderTopLeftRadius: 24, borderTopRightRadius: 24, gap: 10 },
-  title: { color: '#1E1E24', fontSize: 22, fontWeight: '900', marginTop: 12 },
-  muted: { color: '#6C757D', fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8 },
-  panelTitle: { color: '#1E1E24', fontSize: 17, fontWeight: '900' },
-  panelText: { color: '#6C757D', fontSize: 13, lineHeight: 19 },
-  actions: { flexDirection: 'row', gap: 10, marginTop: 6 },
-  primaryBtn: { flex: 1, minHeight: 48, borderRadius: 14, backgroundColor: '#FF5C00', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  container: { flex: 1, backgroundColor: '#FAF9F6' },
+  header: { height: 62, paddingHorizontal: 20, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F1F3F5', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  iconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#F8F9FA', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: '#1E1E24', fontSize: 18, fontWeight: '900' },
+  content: { padding: 20, gap: 16, paddingBottom: 36 },
+  previewCard: { height: 260, borderRadius: 22, backgroundColor: '#FFFFFF', overflow: 'hidden' },
+  previewImage: { width: '100%', height: '100%' },
+  previewEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  previewTitle: { color: '#1E1E24', fontSize: 19, fontWeight: '900', marginTop: 12 },
+  previewText: { color: '#6C757D', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 },
+  actionRow: { flexDirection: 'row', gap: 10 },
+  primaryBtn: { flex: 1, minHeight: 50, borderRadius: 15, backgroundColor: '#FF5C00', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   primaryText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
-  secondaryBtn: { flex: 1, minHeight: 48, borderRadius: 14, backgroundColor: '#FFF0E6', alignItems: 'center', justifyContent: 'center' },
+  secondaryBtn: { flex: 1, minHeight: 50, borderRadius: 15, backgroundColor: '#FFF0E6', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   secondaryText: { color: '#FF5C00', fontSize: 14, fontWeight: '900' },
+  errorCard: { backgroundColor: '#FFF2F2', borderRadius: 14, padding: 12 },
+  errorText: { color: '#D9383A', fontSize: 13, fontWeight: '700' },
+  hintsCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16 },
+  sectionTitle: { color: '#1E1E24', fontSize: 16, fontWeight: '900' },
+  sectionText: { color: '#6C757D', fontSize: 12, lineHeight: 18, marginTop: 4 },
+  hintGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 14 },
+  hintChip: { flexDirection: 'row', alignItems: 'center', borderRadius: 13, backgroundColor: '#FFF0E6', paddingHorizontal: 12, paddingVertical: 10, gap: 6 },
+  hintChipActive: { backgroundColor: '#FF5C00' },
+  hintText: { color: '#FF5C00', fontSize: 12, fontWeight: '900' },
+  hintTextActive: { color: '#FFFFFF' },
+  searchBtn: { minHeight: 54, borderRadius: 16, backgroundColor: '#FF5C00', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  searchBtnDisabled: { backgroundColor: '#FFAB80' },
+  searchText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
 });

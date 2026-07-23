@@ -31,7 +31,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "QuickBite needs camera access so you can scan food barcodes."
+          "cameraPermission": "QuickBite needs camera access so you can snap food photos for similar meal search."
         }
       ],
       [
@@ -40,7 +40,8 @@
           "locationAlwaysAndWhenInUsePermission": "QuickBite needs your location so customers can track active deliveries.",
           "locationWhenInUsePermission": "QuickBite needs your location so customers can track active deliveries."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "scheme": "quickbite"
   }

@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../lib/api';
+import { getAuthToken, removeAuthToken, saveAuthToken } from '../../lib/authStorage';
 
 // Initial state
 const initialState = {
@@ -44,8 +45,18 @@ export const register = createAsyncThunk(
         password,
         role,
       });
-      // Backend returns string message: "Registration successful. Check your email for OTP."
-      return { message: response.data, email };
+      if (response.data?.auth?.token) {
+        const { token, role: returnedRole, name: returnedName, profileImage } = response.data.auth;
+        await saveAuthToken(token);
+        await AsyncStorage.multiSet([
+          ['role', returnedRole],
+          ['userName', returnedName],
+          ['userEmail', email],
+          ['profileImage', profileImage || ''],
+        ]);
+        return { token, role: returnedRole, name: returnedName, email, profileImage, verified: true };
+      }
+      return { message: response.data?.message || response.data, email: response.data?.email || email, verified: false };
     } catch (error) {
       return rejectWithValue(getApiErrorMessage(error, 'Registration failed'));
     }
@@ -68,6 +79,18 @@ export const verifyOtp = createAsyncThunk(
   }
 );
 
+export const resendOtp = createAsyncThunk(
+  'auth/resendOtp',
+  async ({ email }, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/api/auth/resend-otp', { email, password: '' });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(getApiErrorMessage(error, 'Unable to resend verification code'));
+    }
+  }
+);
+
 export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password }, { rejectWithValue }) => {
@@ -79,9 +102,8 @@ export const login = createAsyncThunk(
       // Backend returns AuthResponse: { token, role, name }
       const { token, role, name, profileImage } = response.data;
       
-      // Save credentials to AsyncStorage
+      await saveAuthToken(token);
       await AsyncStorage.multiSet([
-        ['token', token],
         ['role', role],
         ['userName', name],
         ['userEmail', email],
@@ -99,7 +121,8 @@ export const logout = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      await AsyncStorage.multiRemove(['token', 'role', 'userName', 'userEmail', 'profileImage']);
+      await removeAuthToken();
+      await AsyncStorage.multiRemove(['role', 'userName', 'userEmail', 'profileImage']);
       return null;
     } catch (error) {
       return rejectWithValue('Logout failed');
@@ -111,17 +134,18 @@ export const loadStoredAuth = createAsyncThunk(
   'auth/loadStoredAuth',
   async (_, { rejectWithValue }) => {
     try {
-      const keys = ['token', 'role', 'userName', 'userEmail', 'profileImage'];
+      const keys = ['role', 'userName', 'userEmail', 'profileImage'];
       const stores = await AsyncStorage.multiGet(keys);
+      const token = await getAuthToken();
       const authData = {};
       
       stores.forEach(([key, value]) => {
         authData[key] = value;
       });
 
-      if (authData.token && authData.role) {
+      if (token && authData.role) {
         return {
-          token: authData.token,
+          token,
           role: authData.role,
           name: authData.userName || '',
           email: authData.userEmail || '',
@@ -168,8 +192,20 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.registerStatus = 'success';
-        state.otpEmail = action.payload.email;
+        if (action.payload.verified) {
+          state.registerStatus = 'verified';
+          state.isAuthenticated = true;
+          state.token = action.payload.token;
+          state.role = action.payload.role;
+          state.user = {
+            name: action.payload.name,
+            email: action.payload.email,
+            profileImage: action.payload.profileImage,
+          };
+        } else {
+          state.registerStatus = 'success';
+          state.otpEmail = action.payload.email;
+        }
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
@@ -190,6 +226,19 @@ const authSlice = createSlice({
       .addCase(verifyOtp.rejected, (state, action) => {
         state.isLoading = false;
         state.otpStatus = 'failed';
+        state.error = action.payload;
+      })
+
+      // Resend OTP
+      .addCase(resendOtp.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(resendOtp.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(resendOtp.rejected, (state, action) => {
+        state.isLoading = false;
         state.error = action.payload;
       })
       

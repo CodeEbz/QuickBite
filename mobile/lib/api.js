@@ -1,5 +1,5 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuthToken } from './authStorage';
 
 // Render production endpoint by default
 const DEFAULT_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://quickbite-backend-x63n.onrender.com';
@@ -17,7 +17,7 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getAuthToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

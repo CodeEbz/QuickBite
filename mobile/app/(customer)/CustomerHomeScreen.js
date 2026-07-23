@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout, updateUserProfile } from '../../store/slices/authSlice';
 import api from '../../lib/api';
 import { pickImageFromLibrary, uploadImage } from '../../lib/imageUpload';
+import { fallbackAddress, getDefaultAddress, saveDefaultAddress } from '../../lib/addressStorage';
 import { Ionicons } from '@expo/vector-icons';
 
 const CATEGORIES = [
@@ -50,6 +51,8 @@ export default function CustomerHomeScreen({ navigation, route }) {
   const [activeTab, setActiveTab] = useState('home');
   const [orders, setOrders] = useState([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState(fallbackAddress);
+  const [addressDraft, setAddressDraft] = useState(fallbackAddress);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -98,13 +101,26 @@ export default function CustomerHomeScreen({ navigation, route }) {
   }, []);
 
   useEffect(() => {
+    getDefaultAddress()
+      .then((address) => {
+        setDeliveryAddress(address);
+        setAddressDraft(address);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (route.params?.scannedCode) {
       setActiveTab('home');
       setSelectedCategory('All');
       setSearchQuery(route.params.scannedCode);
       navigation.setParams({ scannedCode: undefined });
     }
-  }, [route.params?.scannedCode]);
+    if (route.params?.openProfile) {
+      setActiveTab('profile');
+      navigation.setParams({ openProfile: undefined });
+    }
+  }, [route.params?.scannedCode, route.params?.openProfile, navigation]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -125,6 +141,16 @@ export default function CustomerHomeScreen({ navigation, route }) {
       alert(message);
     } finally {
       setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleSaveAddress = async () => {
+    try {
+      const saved = await saveDefaultAddress(addressDraft);
+      setDeliveryAddress(saved);
+      alert('Delivery address saved.');
+    } catch (err) {
+      alert('Unable to save address.');
     }
   };
 
@@ -164,7 +190,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
           <Text style={styles.greeting}>Deliver to</Text>
           <View style={styles.locationContainer}>
             <Ionicons name="location" size={16} color="#FF5C00" />
-            <Text style={styles.locationText}>123 Main Street, Cityville</Text>
+            <Text style={styles.locationText} numberOfLines={1}>{deliveryAddress}</Text>
             <Ionicons name="chevron-down" size={16} color="#1E1E24" />
           </View>
         </View>
@@ -248,7 +274,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
               </TouchableOpacity>
             )}
             <TouchableOpacity onPress={() => navigation.navigate('BarcodeScanner')} style={styles.scanBtn}>
-              <Ionicons name="barcode-outline" size={20} color="#FF5C00" />
+              <Ionicons name="camera-outline" size={20} color="#FF5C00" />
             </TouchableOpacity>
           </View>
 
@@ -435,9 +461,20 @@ export default function CustomerHomeScreen({ navigation, route }) {
                   <Ionicons name="location-outline" size={20} color="#FF5C00" />
                   <View style={styles.profileActionText}>
                     <Text style={styles.profileActionTitle}>Delivery address</Text>
-                    <Text style={styles.profileActionMeta}>123 Main Street, Cityville</Text>
+                    <Text style={styles.profileActionMeta}>{deliveryAddress}</Text>
                   </View>
                 </View>
+                <TextInput
+                  value={addressDraft}
+                  onChangeText={setAddressDraft}
+                  placeholder="Enter delivery address"
+                  placeholderTextColor="#8A8A8E"
+                  style={styles.addressInput}
+                  multiline
+                />
+                <TouchableOpacity onPress={handleSaveAddress} style={styles.saveAddressBtn}>
+                  <Text style={styles.saveAddressText}>Save Address</Text>
+                </TouchableOpacity>
                 <View style={styles.profileActionRow}>
                   <Ionicons name="card-outline" size={20} color="#FF5C00" />
                   <View style={styles.profileActionText}>
@@ -489,6 +526,7 @@ const styles = StyleSheet.create({
     color: '#1E1E24',
     marginHorizontal: 4,
     flexShrink: 1,
+    maxWidth: 250,
   },
   logoutBtn: {
     width: 40,
@@ -970,6 +1008,28 @@ const styles = StyleSheet.create({
     color: '#6C757D',
     fontSize: 12,
     marginTop: 2,
+  },
+  addressInput: {
+    minHeight: 70,
+    borderRadius: 14,
+    backgroundColor: '#F8F9FA',
+    color: '#1E1E24',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 13,
+    textAlignVertical: 'top',
+  },
+  saveAddressBtn: {
+    backgroundColor: '#FFF0E6',
+    borderRadius: 12,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveAddressText: {
+    color: '#FF5C00',
+    fontSize: 13,
+    fontWeight: '900',
   },
   logoutWideBtn: {
     backgroundColor: '#FFF2F2',
