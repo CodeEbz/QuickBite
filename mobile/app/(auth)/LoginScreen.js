@@ -234,6 +234,13 @@ export default function LoginScreen({ navigation }) {
               >
                 <Text style={styles.demoBtnText}>Merchant</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.demoBtn}
+                onPress={() => handleDemoLogin('admin@quickbite.com')}
+                disabled={isLoading}
+              >
+                <Text style={styles.demoBtnText}>Admin</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Forgot Password */}
@@ -400,11 +407,13 @@ const styles = StyleSheet.create({
   },
   demoRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     marginBottom: 20,
   },
   demoBtn: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '46%',
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
