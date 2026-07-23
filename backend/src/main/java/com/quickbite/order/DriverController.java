@@ -51,6 +51,13 @@ public class DriverController {
         return ResponseEntity.ok(activeOrder);
     }
 
+    @GetMapping("/orders/history")
+    public ResponseEntity<List<Order>> getMyDeliveryHistory(Principal principal) {
+        String driverName = getDriverDisplayName(principal);
+        List<Order> history = orderRepository.findByDriverNameOrderByCreatedAtDesc(driverName);
+        return ResponseEntity.ok(history);
+    }
+
     // 3. Accept job offer
     @PutMapping("/orders/{id}/accept")
     public ResponseEntity<Order> acceptOrder(Principal principal, @PathVariable Long id) {

@@ -38,6 +38,7 @@ export default function RestaurantHomeScreen() {
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
@@ -99,6 +100,7 @@ export default function RestaurantHomeScreen() {
       setError(null);
       const response = await api.put(`/api/merchant/orders/${id}/status?status=${newStatus}`);
       setOrders((prev) => prev.map((order) => (order.id === id ? response.data : order)));
+      setSelectedOrder((current) => (current?.id === id ? response.data : current));
     } catch (err) {
       setError(getApiErrorMessage(err, 'Unable to update order status.'));
     } finally {
@@ -143,6 +145,38 @@ export default function RestaurantHomeScreen() {
 
   const renderOrders = () => (
     <View style={styles.panel}>
+      {selectedOrder && (
+        <View style={styles.detailCard}>
+          <View style={styles.detailHeader}>
+            <View>
+              <Text style={styles.detailLabel}>Selected Order</Text>
+              <Text style={styles.detailTitle}>#QB-{selectedOrder.id}</Text>
+            </View>
+            <TouchableOpacity onPress={() => setSelectedOrder(null)} style={styles.closeBtn}>
+              <Ionicons name="close" size={18} color="#6C757D" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.detailCustomer}>{selectedOrder.customerName}</Text>
+          <Text style={styles.detailMeta}>{selectedOrder.customerEmail}</Text>
+          <View style={styles.detailItems}>
+            {(selectedOrder.items || []).map((item) => (
+              <View key={item.id} style={styles.detailItemRow}>
+                <Text style={styles.detailItemName}>{item.quantity}x {item.itemName}</Text>
+                <Text style={styles.detailItemPrice}>{formatMoney(item.price)}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.detailFooter}>
+            <Text style={styles.orderTotal}>{formatMoney(selectedOrder.totalPrice)}</Text>
+            {updatingOrderId === selectedOrder.id ? (
+              <ActivityIndicator color="#FF5C00" />
+            ) : (
+              renderOrderAction(selectedOrder)
+            )}
+          </View>
+        </View>
+      )}
+
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Kitchen Queue</Text>
         <TouchableOpacity onPress={fetchMerchantData} style={styles.iconBtn}>
@@ -158,7 +192,12 @@ export default function RestaurantHomeScreen() {
         </View>
       ) : (
         orders.map((order) => (
-          <View key={order.id} style={styles.orderCard}>
+          <TouchableOpacity
+            key={order.id}
+            style={styles.orderCard}
+            onPress={() => setSelectedOrder(order)}
+            activeOpacity={0.92}
+          >
             <View style={styles.orderTopRow}>
               <Text style={styles.orderId}>#QB-{order.id}</Text>
               <Text style={[styles.statusPill, styles[`status${order.status}`] || styles.statusDefault]}>
@@ -177,7 +216,7 @@ export default function RestaurantHomeScreen() {
                 renderOrderAction(order)
               )}
             </View>
-          </View>
+          </TouchableOpacity>
         ))
       )}
     </View>
@@ -512,6 +551,76 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF0E6',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  detailCard: {
+    backgroundColor: '#171A1F',
+    borderRadius: 18,
+    padding: 16,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  detailLabel: {
+    color: '#AEB4BC',
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  detailTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '900',
+    marginTop: 3,
+  },
+  closeBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailCustomer: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  detailMeta: {
+    color: '#AEB4BC',
+    fontSize: 12,
+    marginTop: 3,
+  },
+  detailItems: {
+    backgroundColor: '#22262E',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 14,
+    gap: 8,
+  },
+  detailItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  detailItemName: {
+    color: '#E9ECEF',
+    fontSize: 13,
+    flex: 1,
+  },
+  detailItemPrice: {
+    color: '#55C46F',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  detailFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    gap: 12,
   },
   itemCount: {
     color: '#6C757D',

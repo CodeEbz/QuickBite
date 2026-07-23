@@ -20,7 +20,6 @@ const ROLES = [
   { id: 'CUSTOMER', label: 'Customer', desc: 'Order delicious food', icon: 'cart-outline' },
   { id: 'DRIVER', label: 'Driver', desc: 'Deliver & earn money', icon: 'bicycle-outline' },
   { id: 'RESTAURANT', label: 'Restaurant', desc: 'Manage food & orders', icon: 'storefront-outline' },
-  { id: 'ADMIN', label: 'Admin', desc: 'Manage the platform', icon: 'shield-checkmark-outline' },
 ];
 
 export default function RegisterScreen({ navigation }) {

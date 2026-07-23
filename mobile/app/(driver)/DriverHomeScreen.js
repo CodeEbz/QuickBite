@@ -16,17 +16,28 @@ import { logout } from '../../store/slices/authSlice';
 import api from '../../lib/api';
 import { Ionicons } from '@expo/vector-icons';
 
+const DRIVER_TABS = [
+  { id: 'board', label: 'Board', icon: 'radio-outline' },
+  { id: 'history', label: 'History', icon: 'time-outline' },
+  { id: 'profile', label: 'Profile', icon: 'person-outline' },
+];
+
 export default function DriverHomeScreen() {
   const [isOnline, setIsOnline] = useState(true);
+  const [activeTab, setActiveTab] = useState('board');
   const [availableOrders, setAvailableOrders] = useState([]);
   const [activeOrder, setActiveOrder] = useState(null);
+  const [deliveryHistory, setDeliveryHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [completedCount, setCompletedCount] = useState(0);
 
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const completedDeliveries = deliveryHistory.filter((order) => order.status === 'DELIVERED').length;
+  const totalEarned = deliveryHistory
+    .filter((order) => order.status === 'DELIVERED')
+    .reduce((sum, order) => sum + Number(order.totalPrice || 0), 0);
 
   // Animations
   const mapPulseAnim = useRef(new Animated.Value(1)).current;
@@ -74,6 +85,9 @@ export default function DriverHomeScreen() {
       } else {
         setAvailableOrders([]);
       }
+
+      const historyRes = await api.get('/api/driver/orders/history');
+      setDeliveryHistory(Array.isArray(historyRes.data) ? historyRes.data : []);
     } catch (err) {
       const message = err.response?.data?.error || err.message || 'Unable to load driver orders.';
       setError(message);
@@ -112,7 +126,6 @@ export default function DriverHomeScreen() {
       setError(null);
       await api.put(`/api/driver/orders/${id}/complete`);
       setActiveOrder(null);
-      setCompletedCount((prev) => prev + 1);
       alert('Delivery Completed! Earnings updated.');
       fetchDriverData();
     } catch (err) {
@@ -146,6 +159,22 @@ export default function DriverHomeScreen() {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.tabBar}>
+        {DRIVER_TABS.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              onPress={() => setActiveTab(tab.id)}
+              style={[styles.tabBtn, active && styles.tabBtnActive]}
+            >
+              <Ionicons name={tab.icon} size={18} color={active ? '#FFFFFF' : '#6C757D'} />
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -175,11 +204,11 @@ export default function DriverHomeScreen() {
 
           <View style={styles.statsRow}>
             <View style={styles.statCol}>
-              <Text style={styles.statValue}>${(completedCount * 12.50).toFixed(2)}</Text>
+              <Text style={styles.statValue}>${(totalEarned || completedDeliveries * 12.50).toFixed(2)}</Text>
               <Text style={styles.statLabel}>Today's Pay</Text>
             </View>
             <View style={styles.statCol}>
-              <Text style={styles.statValue}>{completedCount}</Text>
+              <Text style={styles.statValue}>{completedDeliveries}</Text>
               <Text style={styles.statLabel}>Deliveries</Text>
             </View>
             <View style={styles.statCol}>
@@ -199,6 +228,8 @@ export default function DriverHomeScreen() {
           </View>
         )}
 
+        {activeTab === 'board' && (
+          <>
         {/* ACTIVE DELIVERY HUD */}
         {activeOrder ? (
           <View style={styles.activeHudCard}>
@@ -319,6 +350,62 @@ export default function DriverHomeScreen() {
             )}
           </View>
         )}
+          </>
+        )}
+
+        {activeTab === 'history' && (
+          <View style={styles.jobsSection}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Delivery History ({deliveryHistory.length})</Text>
+              <TouchableOpacity onPress={fetchDriverData}>
+                <Ionicons name="reload" size={18} color="#FF5C00" />
+              </TouchableOpacity>
+            </View>
+            {deliveryHistory.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Ionicons name="time-outline" size={30} color="#FF5C00" />
+                <Text style={styles.emptyTitle}>No delivery history yet</Text>
+                <Text style={styles.emptyText}>Accepted and completed jobs will be tracked here.</Text>
+              </View>
+            ) : (
+              deliveryHistory.map((order) => (
+                <View key={order.id} style={styles.jobCard}>
+                  <View style={styles.jobHeader}>
+                    <View style={styles.restaurantBadge}>
+                      <Ionicons name="restaurant" size={14} color="#FF5C00" />
+                      <Text style={styles.jobResName}>{order.restaurant?.name || 'Partner Restaurant'}</Text>
+                    </View>
+                    <Text style={styles.jobPayout}>${Number(order.totalPrice).toFixed(2)}</Text>
+                  </View>
+                  <Text style={styles.jobCustomer}>Customer: {order.customerName}</Text>
+                  <Text style={styles.jobItems} numberOfLines={2}>
+                    {order.items?.map((i) => `${i.quantity}x ${i.itemName}`).join(', ')}
+                  </Text>
+                  <Text style={[styles.deliveryStatus, order.status === 'DELIVERED' ? styles.textOnline : styles.textOffline]}>
+                    {order.status}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
+        {activeTab === 'profile' && (
+          <View>
+            <View style={styles.emptyCard}>
+              <View style={styles.profileAvatar}>
+                <Text style={styles.profileInitial}>{(user?.name || 'D')[0].toUpperCase()}</Text>
+              </View>
+              <Text style={styles.emptyTitle}>{user?.name || 'Driver Partner'}</Text>
+              <Text style={styles.emptyText}>{user?.email || 'driver@quickbite.com'}</Text>
+              <Text style={styles.emptyText}>{completedDeliveries} deliveries completed</Text>
+              <TouchableOpacity onPress={handleLogout} style={styles.refreshBtn}>
+                <Ionicons name="log-out-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.refreshBtnText}>Sign Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -360,6 +447,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF2F2',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    padding: 6,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 16,
+    gap: 6,
+  },
+  tabBtn: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 5,
+  },
+  tabBtnActive: {
+    backgroundColor: '#FF5C00',
+  },
+  tabText: {
+    color: '#6C757D',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
   },
   scrollContent: {
     padding: 24,
@@ -691,6 +807,25 @@ const styles = StyleSheet.create({
   inlineRetryText: {
     color: '#D9383A',
     fontSize: 12,
+    fontWeight: '800',
+  },
+  deliveryStatus: {
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 4,
+  },
+  profileAvatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    backgroundColor: '#FFF0E6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  profileInitial: {
+    color: '#FF5C00',
+    fontSize: 30,
     fontWeight: '800',
   },
 });

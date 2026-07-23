@@ -23,6 +23,13 @@ const CATEGORIES = [
   { id: 3, name: 'Asian', icon: 'leaf-outline' },
   { id: 4, name: 'Desserts', icon: 'ice-cream-outline' },
   { id: 5, name: 'Drinks', icon: 'beer-outline' },
+  { id: 6, name: 'Grill', icon: 'flame-outline' },
+];
+
+const CUSTOMER_TABS = [
+  { id: 'home', label: 'Home', icon: 'home-outline' },
+  { id: 'orders', label: 'Orders', icon: 'receipt-outline' },
+  { id: 'profile', label: 'Profile', icon: 'person-outline' },
 ];
 
 export default function CustomerHomeScreen({ navigation }) {
@@ -35,6 +42,8 @@ export default function CustomerHomeScreen({ navigation }) {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [activeTab, setActiveTab] = useState('home');
+  const [orders, setOrders] = useState([]);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -55,8 +64,18 @@ export default function CustomerHomeScreen({ navigation }) {
     }
   };
 
+  const fetchOrders = async () => {
+    try {
+      const response = await api.get('/api/customer/orders');
+      setOrders(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error('Unable to load customer orders:', err);
+    }
+  };
+
   useEffect(() => {
     fetchRestaurants();
+    fetchOrders();
 
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -91,7 +110,17 @@ export default function CustomerHomeScreen({ navigation }) {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    fetchRestaurants();
+    Promise.all([fetchRestaurants(), fetchOrders()]).finally(() => setIsRefreshing(false));
+  };
+
+  const getOrderStatusText = (status) => {
+    if (status === 'PENDING') return 'Waiting for restaurant';
+    if (status === 'PREPARING') return 'Cooking now';
+    if (status === 'READY') return 'Ready for pickup';
+    if (status === 'DELIVERING') return 'Courier on the way';
+    if (status === 'DELIVERED') return 'Delivered';
+    if (status === 'CANCELLED') return 'Cancelled';
+    return status;
   };
 
   return (
@@ -111,6 +140,22 @@ export default function CustomerHomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.tabBar}>
+        {CUSTOMER_TABS.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              onPress={() => setActiveTab(tab.id)}
+              style={[styles.tabBtn, active && styles.tabBtnActive]}
+            >
+              <Ionicons name={tab.icon} size={18} color={active ? '#FFFFFF' : '#6C757D'} />
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -121,11 +166,13 @@ export default function CustomerHomeScreen({ navigation }) {
       >
         {/* Welcome Section */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          {activeTab === 'home' && (
+            <>
           <View style={styles.welcomeBanner}>
             <View style={styles.bannerTextContainer}>
               <Text style={styles.welcomeText}>Hey {user?.name || 'Customer'},</Text>
               <Text style={styles.promoText}>Hungry? Get 50% off on your first order!</Text>
-              <TouchableOpacity style={styles.promoBtn}>
+              <TouchableOpacity style={styles.promoBtn} onPress={() => setSelectedCategory('All')}>
                 <Text style={styles.promoBtnText}>Order Now</Text>
               </TouchableOpacity>
             </View>
@@ -251,6 +298,83 @@ export default function CustomerHomeScreen({ navigation }) {
               </TouchableOpacity>
             ))
           )}
+            </>
+          )}
+
+          {activeTab === 'orders' && (
+            <View>
+              <Text style={styles.sectionTitle}>Your Orders</Text>
+              {orders.length === 0 ? (
+                <View style={styles.stateCard}>
+                  <Ionicons name="receipt-outline" size={30} color="#8A8A8E" />
+                  <Text style={styles.emptyText}>No orders yet. Browse restaurants and place your first order.</Text>
+                  <TouchableOpacity onPress={() => setActiveTab('home')} style={styles.retryBtn}>
+                    <Text style={styles.retryBtnText}>Browse Food</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                orders.map((order) => (
+                  <TouchableOpacity
+                    key={order.id}
+                    style={styles.orderCard}
+                    onPress={() => navigation.navigate('OrderStatus', { order })}
+                    activeOpacity={0.9}
+                  >
+                    <View style={styles.orderTopRow}>
+                      <Text style={styles.orderId}>#QB-{order.id}</Text>
+                      <Text style={[styles.orderStatus, styles[`orderStatus${order.status}`] || styles.orderStatusDefault]}>
+                        {order.status}
+                      </Text>
+                    </View>
+                    <Text style={styles.orderRestaurant}>{order.restaurant?.name || 'Restaurant'}</Text>
+                    <Text style={styles.orderMeta} numberOfLines={1}>
+                      {getOrderStatusText(order.status)}
+                      {order.driverName ? ` · Driver: ${order.driverName}` : ''}
+                    </Text>
+                    <View style={styles.orderFooter}>
+                      <Text style={styles.orderTotal}>${Number(order.totalPrice).toFixed(2)}</Text>
+                      <View style={styles.trackBtn}>
+                        <Text style={styles.trackBtnText}>Track</Text>
+                        <Ionicons name="chevron-forward" size={15} color="#FF5C00" />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          )}
+
+          {activeTab === 'profile' && (
+            <View>
+              <View style={styles.profileCard}>
+                <View style={styles.profileAvatar}>
+                  <Text style={styles.profileInitial}>{(user?.name || user?.email || 'C')[0].toUpperCase()}</Text>
+                </View>
+                <Text style={styles.profileName}>{user?.name || 'Customer'}</Text>
+                <Text style={styles.profileEmail}>{user?.email || 'customer@quickbite.com'}</Text>
+              </View>
+
+              <View style={styles.profileActions}>
+                <View style={styles.profileActionRow}>
+                  <Ionicons name="location-outline" size={20} color="#FF5C00" />
+                  <View style={styles.profileActionText}>
+                    <Text style={styles.profileActionTitle}>Delivery address</Text>
+                    <Text style={styles.profileActionMeta}>123 Main Street, Cityville</Text>
+                  </View>
+                </View>
+                <View style={styles.profileActionRow}>
+                  <Ionicons name="card-outline" size={20} color="#FF5C00" />
+                  <View style={styles.profileActionText}>
+                    <Text style={styles.profileActionTitle}>Payment</Text>
+                    <Text style={styles.profileActionMeta}>Demo card enabled</Text>
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.logoutWideBtn} onPress={handleLogout}>
+                  <Text style={styles.logoutWideText}>Sign Out</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
@@ -297,6 +421,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF2F2',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    padding: 6,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 16,
+    gap: 6,
+  },
+  tabBtn: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 5,
+  },
+  tabBtnActive: {
+    backgroundColor: '#FF5C00',
+  },
+  tabText: {
+    color: '#6C757D',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
   },
   scrollContent: {
     padding: 24,
@@ -536,5 +689,158 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 13,
+  },
+  orderCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 14,
+  },
+  orderTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  orderId: {
+    color: '#6C757D',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  orderStatus: {
+    overflow: 'hidden',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  orderStatusPENDING: {
+    color: '#C94B00',
+    backgroundColor: '#FFF7E6',
+  },
+  orderStatusPREPARING: {
+    color: '#1A73E8',
+    backgroundColor: '#E8F0FE',
+  },
+  orderStatusREADY: {
+    color: '#2B8A3E',
+    backgroundColor: '#EBFBEE',
+  },
+  orderStatusDELIVERING: {
+    color: '#4D2A8A',
+    backgroundColor: '#F3E8FD',
+  },
+  orderStatusDELIVERED: {
+    color: '#2B8A3E',
+    backgroundColor: '#EBFBEE',
+  },
+  orderStatusCANCELLED: {
+    color: '#D9383A',
+    backgroundColor: '#FFF2F2',
+  },
+  orderStatusDefault: {
+    color: '#6C757D',
+    backgroundColor: '#F1F3F5',
+  },
+  orderRestaurant: {
+    color: '#1E1E24',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  orderMeta: {
+    color: '#6C757D',
+    fontSize: 13,
+    marginTop: 5,
+  },
+  orderFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F3F5',
+  },
+  orderTotal: {
+    color: '#1E1E24',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  trackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  trackBtnText: {
+    color: '#FF5C00',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  profileCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 22,
+    alignItems: 'center',
+  },
+  profileAvatar: {
+    width: 74,
+    height: 74,
+    borderRadius: 22,
+    backgroundColor: '#FFF0E6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  profileInitial: {
+    color: '#FF5C00',
+    fontSize: 30,
+    fontWeight: '800',
+  },
+  profileName: {
+    color: '#1E1E24',
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  profileEmail: {
+    color: '#6C757D',
+    fontSize: 13,
+    marginTop: 4,
+  },
+  profileActions: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginTop: 16,
+    gap: 14,
+  },
+  profileActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileActionText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  profileActionTitle: {
+    color: '#1E1E24',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  profileActionMeta: {
+    color: '#6C757D',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  logoutWideBtn: {
+    backgroundColor: '#FFF2F2',
+    borderRadius: 12,
+    minHeight: 46,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoutWideText: {
+    color: '#D9383A',
+    fontSize: 14,
+    fontWeight: '800',
   },
 });

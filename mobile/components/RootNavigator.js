@@ -10,6 +10,7 @@ import RegisterScreen from '../app/(auth)/RegisterScreen';
 import VerifyOtpScreen from '../app/(auth)/VerifyOtpScreen';
 import CustomerHomeScreen from '../app/(customer)/CustomerHomeScreen';
 import RestaurantMenuScreen from '../app/(customer)/RestaurantMenuScreen';
+import MenuItemDetailScreen from '../app/(customer)/MenuItemDetailScreen';
 import CheckoutScreen from '../app/(customer)/CheckoutScreen';
 import OrderStatusScreen from '../app/(customer)/OrderStatusScreen';
 import DriverHomeScreen from '../app/(driver)/DriverHomeScreen';
@@ -50,6 +51,7 @@ export default function RootNavigator() {
             <>
               <Stack.Screen name="CustomerHome" component={CustomerHomeScreen} />
               <Stack.Screen name="RestaurantMenu" component={RestaurantMenuScreen} />
+              <Stack.Screen name="MenuItemDetail" component={MenuItemDetailScreen} />
               <Stack.Screen name="Checkout" component={CheckoutScreen} />
               <Stack.Screen name="OrderStatus" component={OrderStatusScreen} />
             </>

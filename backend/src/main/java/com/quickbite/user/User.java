@@ -1,5 +1,6 @@
 package com.quickbite.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -18,6 +19,7 @@ public class User {
     private String email;
 
     @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -27,9 +29,12 @@ public class User {
     @Column(nullable = false)
     private boolean verified = false;
 
+    @JsonIgnore
     private String otp;
+    @JsonIgnore
     private LocalDateTime otpExpiry;
     private LocalDateTime createdAt = LocalDateTime.now();
+    private String profileImage;
 
     public enum Role { CUSTOMER, RESTAURANT, DRIVER, ADMIN }
 
@@ -49,4 +54,6 @@ public class User {
     public LocalDateTime getOtpExpiry() { return otpExpiry; }
     public void setOtpExpiry(LocalDateTime otpExpiry) { this.otpExpiry = otpExpiry; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getProfileImage() { return profileImage; }
+    public void setProfileImage(String profileImage) { this.profileImage = profileImage; }
 }

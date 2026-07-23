@@ -14,7 +14,6 @@ import { Ionicons } from '@expo/vector-icons';
 export default function OrderStatusScreen({ route, navigation }) {
   const { order: initialOrder } = route.params;
   const [order, setOrder] = useState(initialOrder);
-  const [isLoading, setIsLoading] = useState(false);
 
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -29,6 +28,7 @@ export default function OrderStatusScreen({ route, navigation }) {
   };
 
   useEffect(() => {
+    fetchOrderStatus();
     // Start polling status
     const interval = setInterval(fetchOrderStatus, 5000);
 
@@ -66,7 +66,7 @@ export default function OrderStatusScreen({ route, navigation }) {
     }
 
     if (step === 3) {
-      if (status === 'PENDING' || status === 'PREPARING') return 'INACTIVE';
+      if (status === 'PENDING' || status === 'PREPARING' || status === 'READY') return status === 'READY' ? 'ACTIVE' : 'INACTIVE';
       if (status === 'DELIVERING') return 'ACTIVE';
       return 'COMPLETED'; // Status is DELIVERED
     }
@@ -127,11 +127,30 @@ export default function OrderStatusScreen({ route, navigation }) {
           <Text style={styles.radarStatus}>
             {order.status === 'PENDING' && 'Waiting for Restaurant...'}
             {order.status === 'PREPARING' && 'Chef is Preparing Your Food!'}
+            {order.status === 'READY' && 'Ready for Courier Pickup!'}
             {order.status === 'DELIVERING' && 'Courier is on the Way!'}
             {order.status === 'DELIVERED' && 'Order Delivered. Enjoy!'}
             {order.status === 'CANCELLED' && 'Order Cancelled.'}
           </Text>
           <Text style={styles.radarSub}>Estimated delivery time: 20-30 mins</Text>
+        </View>
+
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Order</Text>
+            <Text style={styles.summaryValue}>#QB-{order.id}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Restaurant</Text>
+            <Text style={styles.summaryValue}>{order.restaurant?.name || 'Restaurant'}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Driver</Text>
+            <Text style={styles.summaryValue}>{order.driverName || 'Not assigned yet'}</Text>
+          </View>
+          <Text style={styles.itemsText} numberOfLines={3}>
+            {order.items?.map((item) => `${item.quantity}x ${item.itemName}`).join(', ') || 'Items loading...'}
+          </Text>
         </View>
 
         {/* Timeline */}
@@ -178,8 +197,8 @@ export default function OrderStatusScreen({ route, navigation }) {
                   {getStepStyles(3).badgeText}
                 </View>
                 <View style={styles.timelineDetails}>
-                  <Text style={getStepStyles(3).textTitle}>Out for Delivery</Text>
-                  <Text style={styles.descActive}>Rider has picked up your parcel and is heading over.</Text>
+                  <Text style={getStepStyles(3).textTitle}>{order.status === 'READY' ? 'Ready for Pickup' : 'Out for Delivery'}</Text>
+                  <Text style={styles.descActive}>Courier assignment and pickup status update here live.</Text>
                 </View>
                 <View style={[styles.timelineLine, getStepStatus(4) === 'INACTIVE' ? styles.lineInactive : styles.lineActive]} />
               </View>
@@ -265,6 +284,39 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     fontSize: 13,
     marginTop: 12,
+  },
+  summaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 18,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 6,
+  },
+  summaryLabel: {
+    color: '#6C757D',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  summaryValue: {
+    color: '#1E1E24',
+    fontSize: 13,
+    fontWeight: '800',
+    flex: 1,
+    textAlign: 'right',
+  },
+  itemsText: {
+    color: '#495057',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F3F5',
   },
   timelineCard: {
     backgroundColor: '#FFFFFF',

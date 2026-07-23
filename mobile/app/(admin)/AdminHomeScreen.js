@@ -39,6 +39,7 @@ export default function AdminHomeScreen() {
   const [restaurants, setRestaurants] = useState([]);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [updatingKey, setUpdatingKey] = useState(null);
@@ -143,6 +144,7 @@ export default function AdminHomeScreen() {
       setError(null);
       const response = await api.put(`/api/admin/orders/${orderId}/cancel`);
       setOrders((prev) => prev.map((order) => (order.id === orderId ? response.data : order)));
+      setSelectedOrder((current) => (current?.id === orderId ? response.data : current));
     } catch (err) {
       setError(getApiErrorMessage(err, 'Unable to cancel order.'));
     } finally {
@@ -251,6 +253,50 @@ export default function AdminHomeScreen() {
 
   const renderOrders = () => (
     <View style={styles.panel}>
+      {selectedOrder && (
+        <View style={styles.detailCard}>
+          <View style={styles.detailHeader}>
+            <View>
+              <Text style={styles.detailLabel}>Order Detail</Text>
+              <Text style={styles.detailTitle}>#QB-{selectedOrder.id}</Text>
+            </View>
+            <TouchableOpacity onPress={() => setSelectedOrder(null)} style={styles.closeBtn}>
+              <Ionicons name="close" size={18} color="#6C757D" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.detailLine}>{selectedOrder.restaurant?.name || 'Restaurant'}</Text>
+          <Text style={styles.detailMeta}>Customer: {selectedOrder.customerName}</Text>
+          <Text style={styles.detailMeta}>Driver: {selectedOrder.driverName || 'Unassigned'}</Text>
+          <View style={styles.detailItems}>
+            {(selectedOrder.items || []).map((item) => (
+              <View key={item.id} style={styles.detailItemRow}>
+                <Text style={styles.detailItemName}>{item.quantity}x {item.itemName}</Text>
+                <Text style={styles.detailItemPrice}>{formatMoney(item.price)}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.detailFooter}>
+            <Text style={styles.detailTotal}>{formatMoney(selectedOrder.totalPrice)}</Text>
+            <Text style={[styles.statusPill, styles[statusStyleName(selectedOrder.status)] || styles.statusDefault]}>
+              {selectedOrder.status}
+            </Text>
+          </View>
+          {!['DELIVERED', 'CANCELLED'].includes(selectedOrder.status) && (
+            <TouchableOpacity
+              onPress={() => cancelOrder(selectedOrder.id)}
+              disabled={updatingKey === `order-${selectedOrder.id}`}
+              style={[styles.actionBtn, styles.dangerBtn, styles.fullAction]}
+            >
+              {updatingKey === `order-${selectedOrder.id}` ? (
+                <ActivityIndicator color="#D9383A" />
+              ) : (
+                <Text style={styles.dangerBtnText}>Cancel This Order</Text>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Live Orders</Text>
         <Text style={styles.countText}>{orders.length}</Text>
@@ -259,7 +305,12 @@ export default function AdminHomeScreen() {
         const key = `order-${order.id}`;
         const canCancel = !['DELIVERED', 'CANCELLED'].includes(order.status);
         return (
-          <View key={order.id} style={styles.orderCard}>
+          <TouchableOpacity
+            key={order.id}
+            style={styles.orderCard}
+            activeOpacity={0.92}
+            onPress={() => setSelectedOrder(order)}
+          >
             <View style={styles.cardTopRow}>
               <View style={styles.cardTitleBlock}>
                 <Text style={styles.cardTitle}>#QB-{order.id} • {formatMoney(order.totalPrice)}</Text>
@@ -283,7 +334,7 @@ export default function AdminHomeScreen() {
                 )}
               </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
         );
       })}
     </View>
@@ -553,6 +604,80 @@ const styles = StyleSheet.create({
     color: '#6C757D',
     fontSize: 12,
     fontWeight: '800',
+  },
+  detailCard: {
+    backgroundColor: '#171A1F',
+    borderRadius: 18,
+    padding: 16,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  detailLabel: {
+    color: '#AEB4BC',
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  detailTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '900',
+    marginTop: 3,
+  },
+  closeBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailLine: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  detailMeta: {
+    color: '#AEB4BC',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  detailItems: {
+    backgroundColor: '#22262E',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 14,
+    gap: 8,
+  },
+  detailItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  detailItemName: {
+    color: '#E9ECEF',
+    fontSize: 13,
+    flex: 1,
+  },
+  detailItemPrice: {
+    color: '#55C46F',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  detailFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  detailTotal: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '900',
   },
   compactRow: {
     flexDirection: 'row',

@@ -34,11 +34,16 @@ public class AuthService {
         if (userRepository.existsByEmail(req.email()))
             throw new RuntimeException("Email already in use");
 
+        User.Role requestedRole = User.Role.valueOf(req.role().toUpperCase());
+        if (requestedRole == User.Role.ADMIN) {
+            throw new RuntimeException("Admin accounts cannot be created from public signup.");
+        }
+
         User user = new User();
         user.setName(req.name());
         user.setEmail(req.email());
         user.setPassword(passwordEncoder.encode(req.password()));
-        user.setRole(User.Role.valueOf(req.role().toUpperCase()));
+        user.setRole(requestedRole);
 
         String otp = generateOtp();
         user.setOtp(otp);

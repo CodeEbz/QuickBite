@@ -124,7 +124,12 @@ export default function RestaurantMenuScreen({ route, navigation }) {
             menuItems.map((item) => {
               const qty = getCartQty(item.id);
               return (
-                <View key={item.id} style={styles.itemCard}>
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.itemCard}
+                  activeOpacity={0.92}
+                  onPress={() => navigation.navigate('MenuItemDetail', { item, restaurant })}
+                >
                   <View style={styles.itemTextContainer}>
                     <Text style={styles.itemName}>{item.name}</Text>
                     <Text style={styles.itemDesc} numberOfLines={2}>
@@ -134,15 +139,14 @@ export default function RestaurantMenuScreen({ route, navigation }) {
                   </View>
 
                   <View style={styles.itemActionContainer}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <Image source={{ uri: item.image }} style={styles.itemImage} />
                     
                     {qty > 0 ? (
                       <View style={styles.qtyControl}>
                         <TouchableOpacity
-                          onPress={() => dispatch(decrementQuantity(item.id))}
-                          style={styles.qtyBtn}
-                        >
+                        onPress={() => dispatch(decrementQuantity(item.id))}
+                        style={styles.qtyBtn}
+                      >
                           <Ionicons name="remove" size={16} color="#FF5C00" />
                         </TouchableOpacity>
                         <Text style={styles.qtyText}>{qty}</Text>
@@ -163,7 +167,7 @@ export default function RestaurantMenuScreen({ route, navigation }) {
                       </TouchableOpacity>
                     )}
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })
           )}

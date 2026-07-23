@@ -212,6 +212,7 @@ export default function LoginScreen({ navigation }) {
               </TouchableOpacity>
             </TouchableOpacity>
 
+            <Text style={styles.demoLabel}>Demo access</Text>
             <View style={styles.demoRow}>
               <TouchableOpacity
                 style={styles.demoBtn}
@@ -410,6 +411,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
     marginBottom: 20,
+  },
+  demoLabel: {
+    color: '#8A8A8E',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    marginBottom: 10,
   },
   demoBtn: {
     flexGrow: 1,
