@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getAdminToken } from "../lib/authStorage";
 
 interface OrderItem {
   id: number;
@@ -31,7 +32,7 @@ export default function OrdersTab() {
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
       const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/admin/orders", {
         headers: {
           Authorization: `Bearer ${token}`
@@ -54,7 +55,7 @@ export default function OrdersTab() {
   const handleCancelOrder = async (id: number) => {
     if (!confirm("Are you sure you want to cancel this order?")) return;
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
       const res = await fetch(`https://quickbite-backend-x63n.onrender.com/api/admin/orders/${id}/cancel`, {
         method: "PUT",
         headers: {

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getAdminToken } from "../lib/authStorage";
 
 interface Restaurant {
   id: number;
@@ -22,7 +23,7 @@ export default function RestaurantsTab() {
   const fetchRestaurants = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
       const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/admin/restaurants", {
         headers: {
           Authorization: `Bearer ${token}`
@@ -44,7 +45,7 @@ export default function RestaurantsTab() {
 
   const handleUpdateStatus = async (id: number, newStatus: string) => {
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
       const res = await fetch(`https://quickbite-backend-x63n.onrender.com/api/admin/restaurants/${id}/status?status=${newStatus}`, {
         method: "PUT",
         headers: {

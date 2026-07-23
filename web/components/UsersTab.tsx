@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getAdminToken } from "../lib/authStorage";
 
 interface User {
   id: number;
@@ -20,7 +21,7 @@ export default function UsersTab() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
       const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/admin/users", {
         headers: {
           Authorization: `Bearer ${token}`
@@ -42,7 +43,7 @@ export default function UsersTab() {
 
   const handleToggleVerify = async (id: number) => {
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = getAdminToken();
       const res = await fetch(`https://quickbite-backend-x63n.onrender.com/api/admin/users/${id}/verify`, {
         method: "PUT",
         headers: {

@@ -9,6 +9,8 @@ import ReportsTab from "../components/ReportsTab";
 import MenuManager from "../components/MenuManager";
 import KitchenQueue from "../components/KitchenQueue";
 
+import { getAdminToken, getAdminRole, getAdminName, setAdminAuth, clearAdminAuth } from "../lib/authStorage";
+
 export default function Home() {
   // Authentication states
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -24,11 +26,11 @@ export default function Home() {
   // Dashboard states
   const [activeTab, setActiveTab] = useState("overview"); // overview | restaurants | orders | users | reports | kitchen | menu
 
-  // Check if user is already logged in from localStorage on mount
+  // Check if user is already logged in from sessionStorage on mount
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    const name = localStorage.getItem("adminName");
-    const role = localStorage.getItem("adminRole");
+    const token = getAdminToken();
+    const name = getAdminName();
+    const role = getAdminRole();
     if (token && (role === "ADMIN" || role === "RESTAURANT")) {
       setIsLoggedIn(true);
       setUserName(name || "User");
@@ -40,6 +42,8 @@ export default function Home() {
       } else {
         setActiveTab("overview");
       }
+    } else {
+      clearAdminAuth();
     }
   }, []);
 
@@ -48,7 +52,7 @@ export default function Home() {
     if (isLoggedIn && userRole === "RESTAURANT") {
       const fetchProfile = async () => {
         try {
-          const token = localStorage.getItem("adminToken");
+          const token = getAdminToken();
           const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/merchant/profile", {
             headers: {
               Authorization: `Bearer ${token}`
@@ -96,10 +100,8 @@ export default function Home() {
         throw new Error("Access denied. Portal is restricted to administrators and merchants.");
       }
 
-      // Save credentials
-      localStorage.setItem("adminToken", data.token);
-      localStorage.setItem("adminRole", data.role);
-      localStorage.setItem("adminName", data.name);
+      // Save credentials into sessionStorage
+      setAdminAuth(data.token, data.role, data.name);
       
       setUserName(data.name);
       setUserRole(data.role);
@@ -119,12 +121,12 @@ export default function Home() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminRole");
-    localStorage.removeItem("adminName");
+    clearAdminAuth();
     setIsLoggedIn(false);
     setRestaurantName("");
     setUserRole("");
+    setEmail("");
+    setPassword("");
   };
 
   // Render correct sub-view
