@@ -15,6 +15,24 @@ const initialState = {
   otpEmail: null, // Stores email for verification step
 };
 
+const getApiErrorMessage = (error, fallback) => {
+  const data = error.response?.data;
+
+  if (typeof data === 'string') {
+    return data;
+  }
+
+  if (data?.error) {
+    return data.error;
+  }
+
+  if (data?.message) {
+    return data.message;
+  }
+
+  return error.message || fallback;
+};
+
 // Async Thunks
 export const register = createAsyncThunk(
   'auth/register',
@@ -29,8 +47,7 @@ export const register = createAsyncThunk(
       // Backend returns string message: "Registration successful. Check your email for OTP."
       return { message: response.data, email };
     } catch (error) {
-      const errMsg = error.response?.data || error.message || 'Registration failed';
-      return rejectWithValue(errMsg);
+      return rejectWithValue(getApiErrorMessage(error, 'Registration failed'));
     }
   }
 );
@@ -46,8 +63,7 @@ export const verifyOtp = createAsyncThunk(
       // Backend returns string: "Email verified successfully"
       return response.data;
     } catch (error) {
-      const errMsg = error.response?.data || error.message || 'OTP verification failed';
-      return rejectWithValue(errMsg);
+      return rejectWithValue(getApiErrorMessage(error, 'OTP verification failed'));
     }
   }
 );
@@ -73,8 +89,7 @@ export const login = createAsyncThunk(
 
       return { token, role, name, email };
     } catch (error) {
-      const errMsg = error.response?.data || error.message || 'Login failed';
-      return rejectWithValue(errMsg);
+      return rejectWithValue(getApiErrorMessage(error, 'Login failed'));
     }
   }
 );

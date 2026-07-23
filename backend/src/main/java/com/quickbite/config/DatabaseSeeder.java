@@ -39,15 +39,17 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Always ensure merchant user accounts exist in the users table
-        seedMerchantUsers();
+        // Always ensure documented demo user accounts exist in the users table.
+        seedDemoUsers();
 
         if (restaurantRepository.count() == 0) {
             seedDatabase();
         }
     }
 
-    private void seedMerchantUsers() {
+    private void seedDemoUsers() {
+        seedUser("QuickBite Admin", "admin@quickbite.com", User.Role.ADMIN);
+        seedUser("Sarah Jenkins", "sarah@gmail.com", User.Role.CUSTOMER);
         seedUser("John Smith", "john@burgerpalace.com", User.Role.RESTAURANT);
         seedUser("Marco Rossi", "marco@pizzadiroma.com", User.Role.RESTAURANT);
         seedUser("Yuki Tanaka", "yuki@sushizen.com", User.Role.RESTAURANT);
@@ -56,16 +58,20 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedUser(String name, String email, User.Role role) {
-        if (!userRepository.existsByEmail(email)) {
-            User user = new User();
-            user.setName(name);
-            user.setEmail(email);
-            user.setPassword(passwordEncoder.encode("AdminPassword2026!"));
-            user.setRole(role);
-            user.setVerified(true);
-            userRepository.save(user);
-            System.out.println("Seeded user account (" + role + "): " + email);
-        }
+        User user = userRepository.findByEmail(email).orElseGet(User::new);
+        boolean isNew = user.getId() == null;
+
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode("AdminPassword2026!"));
+        user.setRole(role);
+        user.setVerified(true);
+        user.setOtp(null);
+        user.setOtpExpiry(null);
+        userRepository.save(user);
+
+        String action = isNew ? "Seeded" : "Updated";
+        System.out.println(action + " demo user account (" + role + "): " + email);
     }
 
     private void seedDatabase() {
