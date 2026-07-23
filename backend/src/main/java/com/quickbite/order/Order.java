@@ -26,6 +26,9 @@ public class Order {
     private Restaurant restaurant;
 
     private String driverName;
+    private Double driverLatitude;
+    private Double driverLongitude;
+    private LocalDateTime driverLocationUpdatedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -56,6 +59,12 @@ public class Order {
     public void setRestaurant(Restaurant restaurant) { this.restaurant = restaurant; }
     public String getDriverName() { return driverName; }
     public void setDriverName(String driverName) { this.driverName = driverName; }
+    public Double getDriverLatitude() { return driverLatitude; }
+    public void setDriverLatitude(Double driverLatitude) { this.driverLatitude = driverLatitude; }
+    public Double getDriverLongitude() { return driverLongitude; }
+    public void setDriverLongitude(Double driverLongitude) { this.driverLongitude = driverLongitude; }
+    public LocalDateTime getDriverLocationUpdatedAt() { return driverLocationUpdatedAt; }
+    public void setDriverLocationUpdatedAt(LocalDateTime driverLocationUpdatedAt) { this.driverLocationUpdatedAt = driverLocationUpdatedAt; }
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
     public BigDecimal getTotalPrice() { return totalPrice; }

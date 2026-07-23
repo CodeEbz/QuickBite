@@ -13,6 +13,9 @@ import RestaurantMenuScreen from '../app/(customer)/RestaurantMenuScreen';
 import MenuItemDetailScreen from '../app/(customer)/MenuItemDetailScreen';
 import CheckoutScreen from '../app/(customer)/CheckoutScreen';
 import OrderStatusScreen from '../app/(customer)/OrderStatusScreen';
+import CartScreen from '../app/(customer)/CartScreen';
+import BarcodeScannerScreen from '../app/(customer)/BarcodeScannerScreen';
+import ChatScreen from '../app/(customer)/ChatScreen';
 import DriverHomeScreen from '../app/(driver)/DriverHomeScreen';
 import RestaurantHomeScreen from '../app/(restaurant)/RestaurantHomeScreen';
 import AdminHomeScreen from '../app/(admin)/AdminHomeScreen';
@@ -52,6 +55,9 @@ export default function RootNavigator() {
               <Stack.Screen name="CustomerHome" component={CustomerHomeScreen} />
               <Stack.Screen name="RestaurantMenu" component={RestaurantMenuScreen} />
               <Stack.Screen name="MenuItemDetail" component={MenuItemDetailScreen} />
+              <Stack.Screen name="Cart" component={CartScreen} />
+              <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
+              <Stack.Screen name="Chat" component={ChatScreen} />
               <Stack.Screen name="Checkout" component={CheckoutScreen} />
               <Stack.Screen name="OrderStatus" component={OrderStatusScreen} />
             </>

@@ -148,6 +148,19 @@ export default function OrderStatusScreen({ route, navigation }) {
             <Text style={styles.summaryLabel}>Driver</Text>
             <Text style={styles.summaryValue}>{order.driverName || 'Not assigned yet'}</Text>
           </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Courier GPS</Text>
+            <Text style={styles.summaryValue}>
+              {order.driverLatitude && order.driverLongitude
+                ? `${Number(order.driverLatitude).toFixed(4)}, ${Number(order.driverLongitude).toFixed(4)}`
+                : 'Waiting for live location'}
+            </Text>
+          </View>
+          {order.driverLocationUpdatedAt ? (
+            <Text style={styles.liveTrackingText}>
+              Live tracking updated {new Date(order.driverLocationUpdatedAt).toLocaleTimeString()}
+            </Text>
+          ) : null}
           <Text style={styles.itemsText} numberOfLines={3}>
             {order.items?.map((item) => `${item.quantity}x ${item.itemName}`).join(', ') || 'Items loading...'}
           </Text>
@@ -317,6 +330,12 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F1F3F5',
+  },
+  liveTrackingText: {
+    color: '#2B8A3E',
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 8,
   },
   timelineCard: {
     backgroundColor: '#FFFFFF',

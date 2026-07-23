@@ -85,6 +85,9 @@ export default function RestaurantMenuScreen({ route, navigation }) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color="#1E1E24" />
           </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Chat', { restaurant })} style={styles.chatBtn}>
+            <Ionicons name="chatbubble-ellipses-outline" size={21} color="#FF5C00" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.restaurantInfo}>
@@ -178,7 +181,7 @@ export default function RestaurantMenuScreen({ route, navigation }) {
       {cart.items.length > 0 && cart.restaurantId === restaurant.id && (
         <View style={styles.floatingCartContainer}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Checkout', { restaurant })}
+            onPress={() => navigation.navigate('Cart')}
             style={styles.floatingCartBtn}
             activeOpacity={0.9}
           >
@@ -218,6 +221,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#1E1E24',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  chatBtn: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
     width: 40,
     height: 40,
     borderRadius: 12,

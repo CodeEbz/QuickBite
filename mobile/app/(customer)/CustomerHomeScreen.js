@@ -31,12 +31,15 @@ const CATEGORIES = [
 const CUSTOMER_TABS = [
   { id: 'home', label: 'Home', icon: 'home-outline' },
   { id: 'orders', label: 'Orders', icon: 'receipt-outline' },
+  { id: 'cart', label: 'Cart', icon: 'cart-outline' },
+  { id: 'chat', label: 'Chat', icon: 'chatbubbles-outline' },
   { id: 'profile', label: 'Profile', icon: 'person-outline' },
 ];
 
-export default function CustomerHomeScreen({ navigation }) {
+export default function CustomerHomeScreen({ navigation, route }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const cart = useSelector((state) => state.cart);
 
   const [restaurants, setRestaurants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +96,15 @@ export default function CustomerHomeScreen({ navigation }) {
       }),
     ]).start();
   }, []);
+
+  useEffect(() => {
+    if (route.params?.scannedCode) {
+      setActiveTab('home');
+      setSelectedCategory('All');
+      setSearchQuery(route.params.scannedCode);
+      navigation.setParams({ scannedCode: undefined });
+    }
+  }, [route.params?.scannedCode]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -167,11 +179,26 @@ export default function CustomerHomeScreen({ navigation }) {
           return (
             <TouchableOpacity
               key={tab.id}
-              onPress={() => setActiveTab(tab.id)}
+              onPress={() => {
+                if (tab.id === 'cart') {
+                  navigation.navigate('Cart');
+                  return;
+                }
+                if (tab.id === 'chat') {
+                  navigation.navigate('Chat');
+                  return;
+                }
+                setActiveTab(tab.id);
+              }}
               style={[styles.tabBtn, active && styles.tabBtnActive]}
             >
               <Ionicons name={tab.icon} size={18} color={active ? '#FFFFFF' : '#6C757D'} />
               <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+              {tab.id === 'cart' && cart.items.length > 0 ? (
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>{cart.items.reduce((sum, item) => sum + item.quantity, 0)}</Text>
+                </View>
+              ) : null}
             </TouchableOpacity>
           );
         })}
@@ -220,6 +247,9 @@ export default function CustomerHomeScreen({ navigation }) {
                 <Ionicons name="close-circle" size={18} color="#8A8A8E" />
               </TouchableOpacity>
             )}
+            <TouchableOpacity onPress={() => navigation.navigate('BarcodeScanner')} style={styles.scanBtn}>
+              <Ionicons name="barcode-outline" size={20} color="#FF5C00" />
+            </TouchableOpacity>
           </View>
 
           {/* Categories */}
@@ -486,6 +516,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 5,
   },
+  tabBadge: {
+    position: 'absolute',
+    top: 3,
+    right: 5,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#D9383A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tabBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+  },
   tabBtnActive: {
     backgroundColor: '#FF5C00',
   },
@@ -578,6 +625,15 @@ const styles = StyleSheet.create({
   },
   clearSearchBtn: {
     padding: 4,
+  },
+  scanBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    backgroundColor: '#FFF0E6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
   },
   sectionHeader: {
     flexDirection: 'row',

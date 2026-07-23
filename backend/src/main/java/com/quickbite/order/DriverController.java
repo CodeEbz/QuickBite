@@ -7,6 +7,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -75,6 +76,29 @@ public class DriverController {
         return ResponseEntity.ok(orderRepository.save(order));
     }
 
+    @PutMapping("/orders/{id}/location")
+    public ResponseEntity<Order> updateDeliveryLocation(
+            Principal principal,
+            @PathVariable Long id,
+            @RequestBody LocationUpdateRequest req
+    ) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        String driverName = getDriverDisplayName(principal);
+        if (!driverName.equalsIgnoreCase(order.getDriverName())) {
+            throw new RuntimeException("Access denied. You are not assigned to this delivery.");
+        }
+        if (req.latitude() == null || req.longitude() == null) {
+            throw new RuntimeException("Latitude and longitude are required.");
+        }
+
+        order.setDriverLatitude(req.latitude());
+        order.setDriverLongitude(req.longitude());
+        order.setDriverLocationUpdatedAt(LocalDateTime.now());
+        return ResponseEntity.ok(orderRepository.save(order));
+    }
+
     // 4. Mark delivery as complete upon arrival
     @PutMapping("/orders/{id}/complete")
     public ResponseEntity<Order> completeDelivery(Principal principal, @PathVariable Long id) {
@@ -89,4 +113,6 @@ public class DriverController {
         order.setStatus(Order.Status.DELIVERED);
         return ResponseEntity.ok(orderRepository.save(order));
     }
+
+    public record LocationUpdateRequest(Double latitude, Double longitude) {}
 }

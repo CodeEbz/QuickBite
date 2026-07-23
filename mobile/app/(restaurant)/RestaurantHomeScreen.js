@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 const TABS = [
   { id: 'orders', label: 'Orders', icon: 'receipt-outline' },
   { id: 'menu', label: 'Menu', icon: 'fast-food-outline' },
+  { id: 'chat', label: 'Chat', icon: 'chatbubbles-outline' },
   { id: 'profile', label: 'Profile', icon: 'storefront-outline' },
 ];
 
@@ -45,6 +47,11 @@ export default function RestaurantHomeScreen() {
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
   const [uploadingMenuItemId, setUploadingMenuItemId] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [selectedCustomerEmail, setSelectedCustomerEmail] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [replyImage, setReplyImage] = useState(null);
+  const [isSendingReply, setIsSendingReply] = useState(false);
   const [error, setError] = useState(null);
 
   const dispatch = useDispatch();
@@ -62,6 +69,7 @@ export default function RestaurantHomeScreen() {
       setProfile(profileRes.data);
       setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
       setMenuItems(Array.isArray(menuRes.data) ? menuRes.data : []);
+      fetchMerchantChats();
     } catch (err) {
       setError(getApiErrorMessage(err, 'Unable to load restaurant dashboard.'));
       console.error('Restaurant dashboard load failed:', err);
@@ -126,6 +134,63 @@ export default function RestaurantHomeScreen() {
       setError(getApiErrorMessage(err, 'Unable to upload menu item photo.'));
     } finally {
       setUploadingMenuItemId(null);
+    }
+  };
+
+  const fetchMerchantChats = async () => {
+    try {
+      const response = await api.get('/api/chat/merchant');
+      const list = Array.isArray(response.data) ? response.data : [];
+      setChatMessages(list);
+      if (!selectedCustomerEmail && list.length > 0) {
+        setSelectedCustomerEmail(list[list.length - 1].customerEmail);
+      }
+    } catch (err) {
+      console.error('Unable to load merchant chats:', err);
+    }
+  };
+
+  const attachReplyImage = async () => {
+    try {
+      const asset = await pickImageFromLibrary();
+      if (asset) setReplyImage(asset);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to choose image.'));
+    }
+  };
+
+  const getFilename = (asset) => asset.fileName || asset.uri?.split('/').pop() || `reply-${Date.now()}.jpg`;
+  const getMimeType = (asset) => asset.mimeType || (getFilename(asset).toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+
+  const sendMerchantReply = async () => {
+    if (!selectedCustomerEmail) return;
+    if (!replyText.trim() && !replyImage) {
+      setError('Type a reply or attach an image.');
+      return;
+    }
+
+    setIsSendingReply(true);
+    try {
+      setError(null);
+      const formData = new FormData();
+      formData.append('message', replyText.trim());
+      if (replyImage) {
+        formData.append('file', {
+          uri: replyImage.uri,
+          name: getFilename(replyImage),
+          type: getMimeType(replyImage),
+        });
+      }
+      const response = await api.post(`/api/chat/merchant/customers/${encodeURIComponent(selectedCustomerEmail)}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setChatMessages((prev) => [...prev, response.data]);
+      setReplyText('');
+      setReplyImage(null);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to send reply.'));
+    } finally {
+      setIsSendingReply(false);
     }
   };
 
@@ -344,6 +409,88 @@ export default function RestaurantHomeScreen() {
     </View>
   );
 
+  const renderChat = () => {
+    const customers = Array.from(new Map(chatMessages.map((chat) => [chat.customerEmail, chat])).values());
+    const currentMessages = chatMessages.filter((chat) => chat.customerEmail === selectedCustomerEmail);
+
+    return (
+      <View style={styles.panel}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Customer Messages</Text>
+          <TouchableOpacity onPress={fetchMerchantChats} style={styles.iconBtn}>
+            <Ionicons name="reload" size={18} color="#FF5C00" />
+          </TouchableOpacity>
+        </View>
+
+        {customers.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="chatbubbles-outline" size={34} color="#8A8A8E" />
+            <Text style={styles.emptyTitle}>No chats yet</Text>
+            <Text style={styles.emptyText}>Customer questions and food suggestions will appear here.</Text>
+          </View>
+        ) : (
+          <>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chatCustomers}>
+              {customers.map((customer) => {
+                const active = customer.customerEmail === selectedCustomerEmail;
+                return (
+                  <TouchableOpacity
+                    key={customer.customerEmail}
+                    onPress={() => setSelectedCustomerEmail(customer.customerEmail)}
+                    style={[styles.chatCustomerPill, active && styles.chatCustomerPillActive]}
+                  >
+                    <Text style={[styles.chatCustomerText, active && styles.chatCustomerTextActive]} numberOfLines={1}>
+                      {customer.customerName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.chatThread}>
+              {currentMessages.map((chat) => {
+                const mine = chat.senderRole === 'MERCHANT';
+                return (
+                  <View key={chat.id} style={[styles.chatBubble, mine ? styles.chatBubbleMine : styles.chatBubbleOther]}>
+                    <Text style={[styles.chatSender, mine && styles.chatSenderMine]}>{mine ? 'You' : chat.customerName}</Text>
+                    {chat.message ? <Text style={[styles.chatText, mine && styles.chatTextMine]}>{chat.message}</Text> : null}
+                    {chat.imageUrl ? <Image source={{ uri: chat.imageUrl }} style={styles.chatImage} /> : null}
+                  </View>
+                );
+              })}
+            </View>
+
+            {replyImage ? (
+              <View style={styles.replyAttachment}>
+                <Image source={{ uri: replyImage.uri }} style={styles.replyImage} />
+                <TouchableOpacity onPress={() => setReplyImage(null)} style={styles.replyRemove}>
+                  <Ionicons name="close" size={15} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            <View style={styles.replyComposer}>
+              <TouchableOpacity onPress={attachReplyImage} style={styles.replyAttachBtn}>
+                <Ionicons name="image-outline" size={20} color="#FF5C00" />
+              </TouchableOpacity>
+              <TextInput
+                value={replyText}
+                onChangeText={setReplyText}
+                placeholder="Reply to customer..."
+                placeholderTextColor="#8A8A8E"
+                style={styles.replyInput}
+                multiline
+              />
+              <TouchableOpacity onPress={sendMerchantReply} disabled={isSendingReply} style={styles.replySendBtn}>
+                {isSendingReply ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Ionicons name="send" size={17} color="#FFFFFF" />}
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
@@ -434,6 +581,7 @@ export default function RestaurantHomeScreen() {
           <>
             {activeTab === 'orders' && renderOrders()}
             {activeTab === 'menu' && renderMenu()}
+            {activeTab === 'chat' && renderChat()}
             {activeTab === 'profile' && renderProfile()}
           </>
         )}
@@ -895,6 +1043,126 @@ const styles = StyleSheet.create({
     color: '#FF5C00',
     fontSize: 12,
     fontWeight: '800',
+  },
+  chatCustomers: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  chatCustomerPill: {
+    maxWidth: 150,
+    borderRadius: 13,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+  },
+  chatCustomerPillActive: {
+    backgroundColor: '#FF5C00',
+  },
+  chatCustomerText: {
+    color: '#6C757D',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  chatCustomerTextActive: {
+    color: '#FFFFFF',
+  },
+  chatThread: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    gap: 10,
+  },
+  chatBubble: {
+    maxWidth: '88%',
+    borderRadius: 16,
+    padding: 11,
+  },
+  chatBubbleMine: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#FF5C00',
+  },
+  chatBubbleOther: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#F8F9FA',
+  },
+  chatSender: {
+    color: '#FF5C00',
+    fontSize: 11,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  chatSenderMine: {
+    color: '#FFE5D6',
+  },
+  chatText: {
+    color: '#171A1F',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  chatTextMine: {
+    color: '#FFFFFF',
+  },
+  chatImage: {
+    width: 170,
+    height: 120,
+    borderRadius: 12,
+    backgroundColor: '#ECEFF3',
+    marginTop: 8,
+  },
+  replyAttachment: {
+    width: 78,
+    height: 58,
+  },
+  replyImage: {
+    width: 78,
+    height: 58,
+    borderRadius: 12,
+  },
+  replyRemove: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#D9383A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  replyComposer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 10,
+    gap: 8,
+  },
+  replyAttachBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: '#FFF0E6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  replyInput: {
+    flex: 1,
+    minHeight: 42,
+    maxHeight: 88,
+    borderRadius: 13,
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#171A1F',
+    fontSize: 13,
+  },
+  replySendBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: '#FF5C00',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profileName: {
     color: '#171A1F',

@@ -27,6 +27,12 @@
         {
           "photosPermission": "QuickBite needs gallery access so you can upload profile and food photos."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "QuickBite needs camera access so you can scan food barcodes."
+        }
       ]
     ]
   }

@@ -141,6 +141,25 @@ export default function DriverHomeScreen() {
     }
   };
 
+  const updateDriverLocation = async (orderId) => {
+    const now = Date.now();
+    const drift = (now % 100000) / 100000;
+    const latitude = 6.5244 + drift * 0.018;
+    const longitude = 3.3792 + drift * 0.018;
+    try {
+      await api.put(`/api/driver/orders/${orderId}/location`, { latitude, longitude });
+    } catch (err) {
+      console.error('Unable to update driver location:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeOrder?.id || activeOrder.status !== 'DELIVERING') return undefined;
+    updateDriverLocation(activeOrder.id);
+    const interval = setInterval(() => updateDriverLocation(activeOrder.id), 10000);
+    return () => clearInterval(interval);
+  }, [activeOrder?.id, activeOrder?.status]);
+
   const handleLogout = () => {
     dispatch(logout());
   };
