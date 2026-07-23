@@ -18,6 +18,11 @@ public class AuthController {
         return ResponseEntity.ok(authService.register(req));
     }
 
+    @PostMapping("/register-merchant")
+    public ResponseEntity<AuthDtos.AuthResponse> registerMerchant(@RequestBody AuthDtos.RegisterMerchantRequest req) {
+        return ResponseEntity.ok(authService.registerMerchant(req));
+    }
+
     @PostMapping("/verify-otp")
     public ResponseEntity<String> verifyOtp(@RequestBody AuthDtos.VerifyOtpRequest req) {
         return ResponseEntity.ok(authService.verifyOtp(req));

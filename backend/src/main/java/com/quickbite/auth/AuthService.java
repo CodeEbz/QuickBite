@@ -1,5 +1,7 @@
 package com.quickbite.auth;
 
+import com.quickbite.restaurant.Restaurant;
+import com.quickbite.restaurant.RestaurantRepository;
 import com.quickbite.user.User;
 import com.quickbite.user.UserRepository;
 import org.springframework.mail.SimpleMailMessage;
@@ -14,13 +16,15 @@ import java.util.Random;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final RestaurantRepository restaurantRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final JavaMailSender mailSender;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       JwtUtil jwtUtil, JavaMailSender mailSender) {
+    public AuthService(UserRepository userRepository, RestaurantRepository restaurantRepository,
+                       PasswordEncoder passwordEncoder, JwtUtil jwtUtil, JavaMailSender mailSender) {
         this.userRepository = userRepository;
+        this.restaurantRepository = restaurantRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.mailSender = mailSender;
@@ -44,6 +48,35 @@ public class AuthService {
         sendOtp(user.getEmail(), otp);
 
         return "Registration successful. Check your email for OTP.";
+    }
+
+    public AuthDtos.AuthResponse registerMerchant(AuthDtos.RegisterMerchantRequest req) {
+        if (userRepository.existsByEmail(req.email())) {
+            throw new RuntimeException("Email already registered.");
+        }
+
+        // 1. Create User
+        User user = new User();
+        user.setName(req.ownerName());
+        user.setEmail(req.email());
+        user.setPassword(passwordEncoder.encode(req.password()));
+        user.setRole(User.Role.RESTAURANT);
+        user.setVerified(true);
+        userRepository.save(user);
+
+        // 2. Create Restaurant profile
+        Restaurant restaurant = new Restaurant();
+        restaurant.setName(req.restaurantName());
+        restaurant.setEmail(req.email());
+        restaurant.setOwnerName(req.ownerName());
+        restaurant.setCuisineType(req.cuisineType() != null && !req.cuisineType().isBlank() ? req.cuisineType() : "General");
+        restaurant.setStatus(Restaurant.Status.PENDING_APPROVAL);
+        restaurant.setImage("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400");
+        restaurantRepository.save(restaurant);
+
+        // 3. Issue Token
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        return new AuthDtos.AuthResponse(token, user.getRole().name(), user.getName());
     }
 
     public String verifyOtp(AuthDtos.VerifyOtpRequest req) {

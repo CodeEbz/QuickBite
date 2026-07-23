@@ -7,13 +7,14 @@ import com.quickbite.restaurant.RestaurantRepository;
 import com.quickbite.order.Order;
 import com.quickbite.order.OrderItem;
 import com.quickbite.order.OrderRepository;
+import com.quickbite.user.User;
+import com.quickbite.user.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
@@ -21,19 +22,48 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final RestaurantRepository restaurantRepository;
     private final MenuItemRepository menuItemRepository;
     private final OrderRepository orderRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public DatabaseSeeder(RestaurantRepository restaurantRepository,
                           MenuItemRepository menuItemRepository,
-                          OrderRepository orderRepository) {
+                          OrderRepository orderRepository,
+                          UserRepository userRepository,
+                          PasswordEncoder passwordEncoder) {
         this.restaurantRepository = restaurantRepository;
         this.menuItemRepository = menuItemRepository;
         this.orderRepository = orderRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(String... args) throws Exception {
+        // Always ensure merchant user accounts exist in the users table
+        seedMerchantUsers();
+
         if (restaurantRepository.count() == 0) {
             seedDatabase();
+        }
+    }
+
+    private void seedMerchantUsers() {
+        seedMerchantUser("John Smith", "john@burgerpalace.com");
+        seedMerchantUser("Marco Rossi", "marco@pizzadiroma.com");
+        seedMerchantUser("Yuki Tanaka", "yuki@sushizen.com");
+        seedMerchantUser("Laura Vance", "laura@gourmetgrill.com");
+    }
+
+    private void seedMerchantUser(String name, String email) {
+        if (!userRepository.existsByEmail(email)) {
+            User user = new User();
+            user.setName(name);
+            user.setEmail(email);
+            user.setPassword(passwordEncoder.encode("AdminPassword2026!"));
+            user.setRole(User.Role.RESTAURANT);
+            user.setVerified(true);
+            userRepository.save(user);
+            System.out.println("Seeded merchant user account: " + email);
         }
     }
 
@@ -82,22 +112,18 @@ public class DatabaseSeeder implements CommandLineRunner {
         restaurantRepository.save(r4);
 
         // 2. Seed Menu Items
-        // Burger Palace
         seedMenuItem(r1, "Cheese Burger", "Juicy beef patty, cheddar, lettuce, tomato, house sauce", new BigDecimal("10.50"), "Burgers");
         seedMenuItem(r1, "Veggie Burger", "Plant-based patty, avocado, lettuce, vegan mayo", new BigDecimal("9.50"), "Burgers");
-        seedMenuItem(r1, "French Fries", "Crispy golden sea-salted potato fries", new BigDecimal("4.00"), "Desserts"); // Mapping to client category
+        seedMenuItem(r1, "French Fries", "Crispy golden sea-salted potato fries", new BigDecimal("4.00"), "Desserts");
 
-        // Pizza Di Roma
         seedMenuItem(r2, "Spicy Pepperoni Pizza", "Italian pepperoni, mozzarella, chili flakes, tomato sauce", new BigDecimal("14.90"), "Pizza");
         seedMenuItem(r2, "Margherita Pizza", "Fresh mozzarella, basil leaves, extra virgin olive oil", new BigDecimal("12.90"), "Pizza");
         seedMenuItem(r2, "Soda Can", "Chilled 330ml can of soda", new BigDecimal("2.50"), "Drinks");
 
-        // Sushi Zen
         seedMenuItem(r3, "Salmon Nigiri (4pcs)", "Premium fresh salmon over seasoned rice", new BigDecimal("12.00"), "Asian");
         seedMenuItem(r3, "California Roll (8pcs)", "Crab stick, avocado, cucumber, sesame seeds", new BigDecimal("9.00"), "Asian");
 
         // 3. Seed Orders
-        // Completed Order
         Order o1 = new Order();
         o1.setCustomerName("Sarah Jenkins");
         o1.setCustomerEmail("sarah@gmail.com");
@@ -110,7 +136,6 @@ public class DatabaseSeeder implements CommandLineRunner {
         seedOrderItem(o1, "Cheese Burger", 2, new BigDecimal("10.50"));
         seedOrderItem(o1, "French Fries", 1, new BigDecimal("4.00"));
 
-        // Active preparing order
         Order o2 = new Order();
         o2.setCustomerName("Michael Chang");
         o2.setCustomerEmail("michael@gmail.com");
@@ -132,7 +157,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         item.setName(name);
         item.setDescription(desc);
         item.setPrice(price);
-        item.setImage("https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100"); // Generic fallback food thumb
+        item.setImage("https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100");
         item.setCategory(category);
         menuItemRepository.save(item);
     }
@@ -143,7 +168,6 @@ public class DatabaseSeeder implements CommandLineRunner {
         item.setItemName(name);
         item.setQuantity(qty);
         item.setPrice(price);
-        // Cascaded save occurs because of Order cascade rules, but let's make sure it is added to list
         order.getItems().add(item);
         orderRepository.save(order);
     }
