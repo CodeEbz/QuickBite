@@ -160,8 +160,8 @@ export default function UsersTab() {
                         onClick={() => handleToggleVerify(u.id)}
                         className={`px-2.5 py-1.5 border rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           u.verified
-                            ? "border-red-950 text-red-400 hover:bg-red-650/10"
-                            : "border-emerald-950 text-emerald-400 hover:bg-emerald-650/10"
+                            ? "border-red-950 text-red-400 hover:bg-red-950/20"
+                            : "border-emerald-950 text-emerald-400 hover:bg-emerald-950/20"
                         }`}
                       >
                         {u.verified ? "Deactivate" : "Approve Account"}
