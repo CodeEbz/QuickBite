@@ -70,7 +70,7 @@ export default function RestaurantMenuScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       {/* Header Image & Info */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}

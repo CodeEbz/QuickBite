@@ -90,6 +90,11 @@ model Order {
   totalPrice              Decimal     @db.Decimal(10, 2)
   paymentReference        String?     @unique
   paymentStatus           String?
+  restaurantRating        Int?
+  driverRating            Int?
+  appRating               Int?
+  ratingComment           String?
+  ratedAt                 DateTime?
   createdAt               DateTime    @default(now())
 
   restaurant Restaurant  @relation(fields: [restaurantId], references: [id])

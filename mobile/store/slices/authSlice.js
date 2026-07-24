@@ -37,16 +37,25 @@ const getApiErrorMessage = (error, fallback) => {
 // Async Thunks
 export const register = createAsyncThunk(
   'auth/register',
-  async ({ name, email, password, role }, { rejectWithValue }) => {
+  async ({ name, email, password, role, restaurantName, cuisineType }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/api/auth/register', {
-        name,
-        email,
-        password,
-        role,
-      });
-      if (response.data?.auth?.token) {
-        const { token, role: returnedRole, name: returnedName, profileImage } = response.data.auth;
+      const response = role === 'RESTAURANT'
+        ? await api.post('/api/auth/register-merchant', {
+            ownerName: name,
+            email,
+            password,
+            restaurantName,
+            cuisineType,
+          })
+        : await api.post('/api/auth/register', {
+            name,
+            email,
+            password,
+            role,
+          });
+      const authPayload = response.data?.auth?.token ? response.data.auth : response.data?.token ? response.data : null;
+      if (authPayload?.token) {
+        const { token, role: returnedRole, name: returnedName, profileImage } = authPayload;
         await saveAuthToken(token);
         await AsyncStorage.multiSet([
           ['role', returnedRole],

@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../../lib/api';
@@ -14,6 +16,11 @@ import { Ionicons } from '@expo/vector-icons';
 export default function OrderStatusScreen({ route, navigation }) {
   const { order: initialOrder } = route.params;
   const [order, setOrder] = useState(initialOrder);
+  const [restaurantRating, setRestaurantRating] = useState(initialOrder.restaurantRating || 5);
+  const [driverRating, setDriverRating] = useState(initialOrder.driverRating || 5);
+  const [appRating, setAppRating] = useState(initialOrder.appRating || 5);
+  const [ratingComment, setRatingComment] = useState(initialOrder.ratingComment || '');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -22,6 +29,10 @@ export default function OrderStatusScreen({ route, navigation }) {
     try {
       const response = await api.get(`/api/customer/orders/${initialOrder.id}`);
       setOrder(response.data);
+      setRestaurantRating(response.data.restaurantRating || restaurantRating);
+      setDriverRating(response.data.driverRating || driverRating);
+      setAppRating(response.data.appRating || appRating);
+      setRatingComment(response.data.ratingComment || ratingComment);
     } catch (err) {
       console.error('Error fetching order status:', err);
     }
@@ -79,6 +90,35 @@ export default function OrderStatusScreen({ route, navigation }) {
     return 'INACTIVE';
   };
 
+  const renderStars = (value, onChange) => (
+    <View style={styles.starRow}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <TouchableOpacity key={star} onPress={() => onChange(star)} style={styles.starBtn}>
+          <Ionicons name={star <= value ? 'star' : 'star-outline'} size={26} color="#FFD60A" />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const submitRating = async () => {
+    setIsSubmittingRating(true);
+    try {
+      const response = await api.post('/api/customer/orders/' + order.id + '/rating', {
+        restaurantRating,
+        driverRating,
+        appRating,
+        comment: ratingComment,
+      });
+      setOrder(response.data);
+      alert('Thanks for rating your delivery.');
+    } catch (err) {
+      const message = err.response?.data?.error || err.message || 'Unable to submit rating.';
+      alert(message);
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
   const getStepStyles = (step) => {
     const state = getStepStatus(step);
     if (state === 'COMPLETED') {
@@ -110,7 +150,7 @@ export default function OrderStatusScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Track Order</Text>
@@ -229,6 +269,39 @@ export default function OrderStatusScreen({ route, navigation }) {
             </>
           )}
         </View>
+
+        {order.status === 'DELIVERED' ? (
+          <View style={styles.ratingCard}>
+            <Text style={styles.ratingTitle}>{order.ratedAt ? 'Your Rating' : 'Rate this delivery'}</Text>
+            <Text style={styles.ratingSubtitle}>Help customers, merchants, and drivers improve the QuickBite experience.</Text>
+
+            <Text style={styles.ratingLabel}>Restaurant</Text>
+            {renderStars(restaurantRating, setRestaurantRating)}
+
+            <Text style={styles.ratingLabel}>Driver</Text>
+            {renderStars(driverRating, setDriverRating)}
+
+            <Text style={styles.ratingLabel}>QuickBite App</Text>
+            {renderStars(appRating, setAppRating)}
+
+            <TextInput
+              value={ratingComment}
+              onChangeText={setRatingComment}
+              placeholder="Optional review note"
+              placeholderTextColor="#8A8A8E"
+              style={styles.ratingInput}
+              multiline
+            />
+
+            <TouchableOpacity
+              onPress={submitRating}
+              disabled={isSubmittingRating}
+              style={[styles.ratingSubmitBtn, isSubmittingRating && styles.ratingSubmitBtnDisabled]}
+            >
+              {isSubmittingRating ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.ratingSubmitText}>{order.ratedAt ? 'Update Rating' : 'Submit Rating'}</Text>}
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         {/* Back Button */}
         <TouchableOpacity
@@ -422,6 +495,65 @@ const styles = StyleSheet.create({
   },
   lineActive: {
     backgroundColor: '#2B8A3E',
+  },
+  ratingCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 22,
+  },
+  ratingTitle: {
+    color: '#1E1E24',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  ratingSubtitle: {
+    color: '#6C757D',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 5,
+    marginBottom: 14,
+  },
+  ratingLabel: {
+    color: '#1E1E24',
+    fontSize: 13,
+    fontWeight: '800',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  starRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  starBtn: {
+    paddingVertical: 3,
+    paddingRight: 6,
+  },
+  ratingInput: {
+    minHeight: 74,
+    borderRadius: 14,
+    backgroundColor: '#F8F9FA',
+    color: '#1E1E24',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 14,
+    textAlignVertical: 'top',
+  },
+  ratingSubmitBtn: {
+    backgroundColor: '#FF5C00',
+    borderRadius: 14,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+  },
+  ratingSubmitBtnDisabled: {
+    backgroundColor: '#FFAB80',
+  },
+  ratingSubmitText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '900',
   },
   homeBtn: {
     backgroundColor: '#FF5C00',

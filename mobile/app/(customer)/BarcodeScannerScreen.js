@@ -60,12 +60,12 @@ export default function BarcodeScannerScreen({ navigation }) {
   };
 
   const searchSimilar = () => {
-    const query = selectedHint?.query || 'All';
+    const query = selectedHint?.query || ''; 
     navigation.navigate('CustomerHome', { scannedCode: query });
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
           <Ionicons name="arrow-back" size={22} color="#1E1E24" />
@@ -106,7 +106,7 @@ export default function BarcodeScannerScreen({ navigation }) {
 
         <View style={styles.hintsCard}>
           <Text style={styles.sectionTitle}>What does it look like?</Text>
-          <Text style={styles.sectionText}>Pick the closest match so we can search similar dishes.</Text>
+          <Text style={styles.sectionText}>Pick the closest match for best results. If you skip this, we will show all restaurants instead of returning no matches.</Text>
           <View style={styles.hintGrid}>
             {FOOD_HINTS.map((hint) => {
               const active = selectedHint?.label === hint.label;

@@ -24,7 +24,17 @@ function readMenuItemId(item) {
   return Number(item.menuItemId || item.id);
 }
 
-async function calculateOrderQuote(payload) {
+async function isFirstCustomerOrder(customerEmail) {
+  if (!customerEmail) return false;
+  const count = await prisma.order.count({ where: { customerEmail } });
+  return count === 0;
+}
+
+function wantsFirstOrderDiscount(payload) {
+  return String(payload?.promoCode || '').trim().toUpperCase() === 'FIRST50';
+}
+
+async function calculateOrderQuote(payload, customerEmail = null) {
   validateOrderRequest(payload);
   const restaurantId = Number(payload.restaurantId);
   const requestedItems = payload.items.map((item) => ({
@@ -62,15 +72,18 @@ async function calculateOrderQuote(payload) {
   });
 
   const subtotal = roundMoney(items.reduce((sum, item) => sum + item.price * item.quantity, 0));
+  const firstOrderDiscountEligible = wantsFirstOrderDiscount(payload) && await isFirstCustomerOrder(customerEmail);
+  const discount = firstOrderDiscountEligible ? roundMoney(subtotal * 0.5) : 0;
+  const discountedSubtotal = roundMoney(subtotal - discount);
   const deliveryFee = roundMoney(config.deliveryFee);
-  const tax = roundMoney(subtotal * config.taxRate);
-  const totalPrice = roundMoney(subtotal + deliveryFee + tax);
+  const tax = roundMoney(discountedSubtotal * config.taxRate);
+  const totalPrice = roundMoney(discountedSubtotal + deliveryFee + tax);
 
   if (payload.totalPrice !== undefined && Math.abs(Number(payload.totalPrice) - totalPrice) > 0.01) {
     throw httpError('Order total changed. Refresh your cart and try again.');
   }
 
-  return { items, subtotal, deliveryFee, tax, totalPrice };
+  return { items, subtotal, discount, deliveryFee, tax, totalPrice, promoCode: firstOrderDiscountEligible ? 'FIRST50' : null };
 }
 
 async function createOrder(email, payload, paymentReference = null, paymentStatus = null) {
@@ -78,7 +91,7 @@ async function createOrder(email, payload, paymentReference = null, paymentStatu
   const restaurant = await prisma.restaurant.findUnique({ where: { id: Number(payload.restaurantId) } });
   if (!restaurant) throw httpError('Restaurant not found.', 404);
   if (restaurant.status !== 'ACTIVE') throw httpError('Restaurant is not accepting orders.', 400);
-  const quote = await calculateOrderQuote(payload);
+  const quote = await calculateOrderQuote(payload, email);
 
   return prisma.order.create({
     data: {
@@ -122,14 +135,14 @@ router.post('/orders', asyncHandler(async (req, res) => {
 }));
 
 router.post('/payments/initialize', asyncHandler(async (req, res) => {
-  const quote = await calculateOrderQuote(req.body);
+  const quote = await calculateOrderQuote(req.body, req.user.sub);
   const initialized = await paystack.initializePayment(req.user.sub, quote.totalPrice, req.body.callbackUrl);
   res.json(initialized);
 }));
 
 router.post('/payments/verify', asyncHandler(async (req, res) => {
   const { reference, order } = req.body || {};
-  const quote = await calculateOrderQuote(order);
+  const quote = await calculateOrderQuote(order, req.user.sub);
   const verification = await paystack.verifyPayment(reference);
   const expectedAmount = Math.round(quote.totalPrice * 100);
   if (!verification.successful || (verification.amount !== null && verification.amount !== expectedAmount)) {
@@ -160,6 +173,41 @@ router.get('/orders/:id', asyncHandler(async (req, res) => {
   if (!order) throw httpError('Order not found.', 404);
   if (order.customerEmail !== req.user.sub) throw httpError('Access denied. You do not own this order.', 403);
   res.json(toJson(order));
+}));
+
+function readRating(value, label) {
+  const rating = Number(value);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw httpError(label + ' rating must be between 1 and 5.');
+  return rating;
+}
+
+router.post('/orders/:id/rating', asyncHandler(async (req, res) => {
+  const order = await prisma.order.findUnique({ where: { id: Number(req.params.id) }, include: orderInclude });
+  if (!order) throw httpError('Order not found.', 404);
+  if (order.customerEmail !== req.user.sub) throw httpError('Access denied. You do not own this order.', 403);
+  if (order.status !== 'DELIVERED') throw httpError('You can rate only after delivery is complete.');
+
+  const restaurantRating = readRating(req.body?.restaurantRating, 'Restaurant');
+  const driverRating = readRating(req.body?.driverRating, 'Driver');
+  const appRating = readRating(req.body?.appRating, 'App');
+  const ratingComment = req.body?.comment ? String(req.body.comment).trim().slice(0, 1000) : null;
+
+  const updated = await prisma.order.update({
+    where: { id: order.id },
+    data: { restaurantRating, driverRating, appRating, ratingComment, ratedAt: new Date() },
+    include: orderInclude
+  });
+
+  const restaurantRatings = await prisma.order.findMany({
+    where: { restaurantId: order.restaurantId, restaurantRating: { not: null } },
+    select: { restaurantRating: true }
+  });
+  if (restaurantRatings.length > 0) {
+    const avg = restaurantRatings.reduce((sum, item) => sum + Number(item.restaurantRating), 0) / restaurantRatings.length;
+    await prisma.restaurant.update({ where: { id: order.restaurantId }, data: { rating: roundMoney(avg) } });
+  }
+
+  res.json(toJson(updated));
 }));
 
 module.exports = router;

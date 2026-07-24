@@ -53,6 +53,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState(fallbackAddress);
   const [addressDraft, setAddressDraft] = useState(fallbackAddress);
+  const [promoCode, setPromoCode] = useState(null);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -110,10 +111,11 @@ export default function CustomerHomeScreen({ navigation, route }) {
   }, []);
 
   useEffect(() => {
-    if (route.params?.scannedCode) {
+    if (route.params?.scannedCode !== undefined) {
+      const scannedCode = String(route.params.scannedCode || '');
       setActiveTab('home');
-      setSelectedCategory('All');
-      setSearchQuery(route.params.scannedCode);
+      setSelectedCategory(scannedCode && scannedCode !== 'All' ? scannedCode : 'All');
+      setSearchQuery('');
       navigation.setParams({ scannedCode: undefined });
     }
     if (route.params?.openProfile) {
@@ -148,7 +150,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
     try {
       const saved = await saveDefaultAddress(addressDraft);
       setDeliveryAddress(saved);
-      alert('Delivery address saved.');
+      alert(saved ? 'Delivery address saved.' : 'Delivery address cleared.');
     } catch (err) {
       alert('Unable to save address.');
     }
@@ -183,7 +185,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -245,9 +247,16 @@ export default function CustomerHomeScreen({ navigation, route }) {
           <View style={styles.welcomeBanner}>
             <View style={styles.bannerTextContainer}>
               <Text style={styles.welcomeText}>Hey {user?.name || 'Customer'},</Text>
-              <Text style={styles.promoText}>Hungry? Get 50% off on your first order!</Text>
-              <TouchableOpacity style={styles.promoBtn} onPress={() => setSelectedCategory('All')}>
-                <Text style={styles.promoBtnText}>Order Now</Text>
+              <Text style={styles.promoText}>Hungry? Get 50% off on your first order with FIRST50.</Text>
+              <TouchableOpacity
+                style={styles.promoBtn}
+                onPress={async () => {
+                  setPromoCode('FIRST50');
+                  await AsyncStorage.setItem('quickbite_promo_code', 'FIRST50');
+                  alert('FIRST50 will apply at checkout if this is your first order.');
+                }}
+              >
+                <Text style={styles.promoBtnText}>{promoCode === 'FIRST50' ? 'FIRST50 Applied' : 'Apply FIRST50'}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.bannerIconBg}>
@@ -332,7 +341,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
           ) : filteredRestaurants.length === 0 ? (
             <View style={styles.stateCard}>
               <Ionicons name="search-outline" size={28} color="#8A8A8E" />
-              <Text style={styles.emptyText}>No restaurants match your search.</Text>
+              <Text style={styles.emptyText}>No restaurants match your search. Try another category or clear filters.</Text>
               <TouchableOpacity
                 onPress={() => {
                   setSearchQuery('');
@@ -461,13 +470,13 @@ export default function CustomerHomeScreen({ navigation, route }) {
                   <Ionicons name="location-outline" size={20} color="#FF5C00" />
                   <View style={styles.profileActionText}>
                     <Text style={styles.profileActionTitle}>Delivery address</Text>
-                    <Text style={styles.profileActionMeta}>{deliveryAddress}</Text>
+                    <Text style={styles.profileActionMeta}>{deliveryAddress || 'No delivery address saved yet.'}</Text>
                   </View>
                 </View>
                 <TextInput
                   value={addressDraft}
                   onChangeText={setAddressDraft}
-                  placeholder="Enter delivery address"
+                  placeholder="Enter your delivery address"
                   placeholderTextColor="#8A8A8E"
                   style={styles.addressInput}
                   multiline

@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCart } from '../../store/slices/cartSlice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../lib/api';
 import * as ExpoLinking from 'expo-linking';
 import { getDefaultAddress } from '../../lib/addressStorage';
@@ -26,14 +27,22 @@ export default function CheckoutScreen({ route, navigation }) {
   const [payment, setPayment] = useState(null);
   const [paymentBrowserOpened, setPaymentBrowserOpened] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [promoCode, setPromoCode] = useState(null);
+  const [isFirstOrder, setIsFirstOrder] = useState(false);
 
   const subtotal = cart.totalPrice;
   const deliveryFee = 2.50;
-  const tax = subtotal * 0.08;
-  const total = subtotal + deliveryFee + tax;
+  const discount = promoCode === 'FIRST50' && isFirstOrder ? subtotal * 0.5 : 0;
+  const discountedSubtotal = subtotal - discount;
+  const tax = discountedSubtotal * 0.08;
+  const total = discountedSubtotal + deliveryFee + tax;
 
   useEffect(() => {
     getDefaultAddress().then(setDeliveryAddress).catch(() => {});
+    AsyncStorage.getItem('quickbite_promo_code').then(setPromoCode).catch(() => {});
+    api.get('/api/customer/orders')
+      .then((response) => setIsFirstOrder(Array.isArray(response.data) && response.data.length === 0))
+      .catch(() => setIsFirstOrder(false));
   }, []);
 
   const buildOrderPayload = () => ({
@@ -45,6 +54,7 @@ export default function CheckoutScreen({ route, navigation }) {
       price: i.price,
     })),
     totalPrice: total,
+    promoCode: discount > 0 ? promoCode : null,
     callbackUrl: ExpoLinking.createURL('payment'),
   });
 
@@ -64,6 +74,7 @@ export default function CheckoutScreen({ route, navigation }) {
       dispatch(clearCart());
       setPayment(null);
       setPaymentBrowserOpened(false);
+      await AsyncStorage.removeItem('quickbite_promo_code');
       navigation.navigate('OrderStatus', { order: response.data });
     } catch (err) {
       if (!silent) {
@@ -96,6 +107,12 @@ export default function CheckoutScreen({ route, navigation }) {
   }, [payment?.reference, paymentBrowserOpened, isVerifying]);
 
   const handleStartPayment = async () => {
+    if (!deliveryAddress?.trim()) {
+      alert('Please add your delivery address before checkout.');
+      navigation.navigate('CustomerHome', { openProfile: true });
+      return;
+    }
+
     if (payment?.authorizationUrl) {
       setPaymentBrowserOpened(true);
       await Linking.openURL(payment.authorizationUrl);
@@ -120,7 +137,7 @@ export default function CheckoutScreen({ route, navigation }) {
   const handleVerifyPayment = async () => verifyPayment(false);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -148,7 +165,7 @@ export default function CheckoutScreen({ route, navigation }) {
           </View>
           <View style={styles.addressRow}>
             <Ionicons name="location-outline" size={20} color="#FF5C00" style={styles.addressIcon} />
-            <Text style={styles.addressText}>{deliveryAddress || 'Loading delivery address...'}</Text>
+            <Text style={styles.addressText}>{deliveryAddress || 'No address saved yet. Tap Edit to add one.'}</Text>
           </View>
         </View>
 
@@ -174,6 +191,15 @@ export default function CheckoutScreen({ route, navigation }) {
               <Text style={styles.billLabel}>Item Subtotal</Text>
               <Text style={styles.billValue}>${subtotal.toFixed(2)}</Text>
             </View>
+            {discount > 0 ? (
+              <View style={styles.billRow}>
+                <Text style={styles.discountLabel}>FIRST50 Discount</Text>
+                <Text style={styles.discountValue}>-${discount.toFixed(2)}</Text>
+              </View>
+            ) : null}
+            {promoCode === 'FIRST50' && !isFirstOrder ? (
+              <Text style={styles.promoNote}>FIRST50 is only valid on your first order.</Text>
+            ) : null}
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>Delivery Fee</Text>
               <Text style={styles.billValue}>${deliveryFee.toFixed(2)}</Text>
@@ -371,6 +397,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#495057',
     fontWeight: '600',
+  },
+  discountLabel: {
+    fontSize: 13,
+    color: '#2B8A3E',
+    fontWeight: '800',
+  },
+  discountValue: {
+    fontSize: 13,
+    color: '#2B8A3E',
+    fontWeight: '900',
+  },
+  promoNote: {
+    color: '#8A8A8E',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
   },
   divider: {
     height: 1,

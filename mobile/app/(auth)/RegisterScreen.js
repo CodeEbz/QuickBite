@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const ROLES = [
   { id: 'CUSTOMER', label: 'Customer', desc: 'Order delicious food', icon: 'cart-outline' },
   { id: 'DRIVER', label: 'Driver', desc: 'Deliver & earn money', icon: 'bicycle-outline' },
+  { id: 'RESTAURANT', label: 'Merchant', desc: 'Sell meals on QuickBite', icon: 'storefront-outline' },
 ];
 
 export default function RegisterScreen({ navigation }) {
@@ -26,8 +27,10 @@ export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState('CUSTOMER');
+  const [restaurantName, setRestaurantName] = useState('');
+  const [cuisineType, setCuisineType] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedInput, setFocusedInput] = useState(null); // 'name' | 'email' | 'password'
+  const [focusedInput, setFocusedInput] = useState(null); // 'name' | 'email' | 'password' | 'restaurantName' | 'cuisineType'
 
   const dispatch = useDispatch();
   const { isLoading, error, registerStatus } = useSelector((state) => state.auth);
@@ -83,12 +86,17 @@ export default function RegisterScreen({ navigation }) {
     if (!name.trim() || !email.trim() || !password.trim()) {
       return;
     }
+    if (selectedRole === 'RESTAURANT' && !restaurantName.trim()) {
+      return;
+    }
     dispatch(
       register({
         name: name.trim(),
         email: email.trim(),
         password,
         role: selectedRole,
+        restaurantName: restaurantName.trim(),
+        cuisineType: cuisineType.trim() || 'General',
       })
     );
   };
@@ -297,6 +305,38 @@ export default function RegisterScreen({ navigation }) {
               })}
             </View>
 
+            {selectedRole === 'RESTAURANT' && (
+              <>
+                <View style={[styles.inputWrapper, focusedInput === 'restaurantName' && styles.inputWrapperFocused]}>
+                  <Ionicons name="storefront-outline" size={20} color={focusedInput === 'restaurantName' ? '#FF5C00' : '#8A8A8E'} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Restaurant Name"
+                    placeholderTextColor="#8A8A8E"
+                    autoCapitalize="words"
+                    value={restaurantName}
+                    onChangeText={setRestaurantName}
+                    onFocus={() => setFocusedInput('restaurantName')}
+                    onBlur={() => setFocusedInput(null)}
+                  />
+                </View>
+                <View style={[styles.inputWrapper, focusedInput === 'cuisineType' && styles.inputWrapperFocused]}>
+                  <Ionicons name="restaurant-outline" size={20} color={focusedInput === 'cuisineType' ? '#FF5C00' : '#8A8A8E'} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Cuisine Type e.g. Burgers, Pizza"
+                    placeholderTextColor="#8A8A8E"
+                    autoCapitalize="words"
+                    value={cuisineType}
+                    onChangeText={setCuisineType}
+                    onFocus={() => setFocusedInput('cuisineType')}
+                    onBlur={() => setFocusedInput(null)}
+                  />
+                </View>
+                <Text style={styles.merchantNote}>Merchant accounts are created immediately, then need admin approval before accepting orders.</Text>
+              </>
+            )}
+
             {/* Submit Button */}
             <TouchableOpacity
               onPress={handleRegister}
@@ -444,6 +484,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 20,
+  },
+  merchantNote: {
+    color: '#6C757D',
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 10,
   },
   gridCardContainer: {
     width: '48%',

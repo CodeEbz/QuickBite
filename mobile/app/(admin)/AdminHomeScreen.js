@@ -383,7 +383,7 @@ export default function AdminHomeScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={styles.roleTag}>Super Admin Mobile</Text>
