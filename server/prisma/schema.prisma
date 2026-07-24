@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  RESTAURANT
+  DRIVER
+  ADMIN
+}
+
+enum RestaurantStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  SUSPENDED
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  DELIVERING
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  password     String
+  role         Role
+  verified     Boolean   @default(false)
+  otp          String?
+  otpExpiry    DateTime?
+  profileImage String?
+  createdAt    DateTime  @default(now())
+
+  @@index([role])
+}
+
+model Restaurant {
+  id          Int              @id @default(autoincrement())
+  name        String
+  email       String           @unique
+  ownerName   String
+  status      RestaurantStatus @default(PENDING_APPROVAL)
+  image       String?
+  rating      Float            @default(0)
+  cuisineType String?
+  createdAt   DateTime         @default(now())
+
+  menuItems MenuItem[]
+  orders    Order[]
+  chats     ChatMessage[]
+
+  @@index([status])
+  @@index([cuisineType])
+}
+
+model MenuItem {
+  id           Int        @id @default(autoincrement())
+  restaurantId Int
+  name         String
+  description  String?
+  price        Decimal    @db.Decimal(10, 2)
+  image        String?
+  category     String?
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([category])
+}
+
+model Order {
+  id                      Int         @id @default(autoincrement())
+  customerName            String
+  customerEmail           String
+  restaurantId            Int
+  driverName              String?
+  driverLatitude          Float?
+  driverLongitude         Float?
+  driverLocationUpdatedAt DateTime?
+  status                  OrderStatus @default(PENDING)
+  totalPrice              Decimal     @db.Decimal(10, 2)
+  paymentReference        String?     @unique
+  paymentStatus           String?
+  createdAt               DateTime    @default(now())
+
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
+  items      OrderItem[]
+
+  @@index([customerEmail, createdAt])
+  @@index([restaurantId, createdAt])
+  @@index([driverName, createdAt])
+  @@index([status])
+}
+
+model OrderItem {
+  id       Int     @id @default(autoincrement())
+  orderId  Int
+  itemName String
+  quantity Int
+  price    Decimal @db.Decimal(10, 2)
+  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model ChatMessage {
+  id            Int        @id @default(autoincrement())
+  restaurantId  Int
+  customerEmail String
+  customerName  String
+  senderRole    String
+  message       String?    @db.VarChar(1000)
+  imageUrl      String?
+  createdAt     DateTime   @default(now())
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([customerEmail, createdAt])
+  @@index([restaurantId, createdAt])
+}

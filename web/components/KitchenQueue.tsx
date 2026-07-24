@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
+import { apiUrl } from "../lib/api";
+import { getErrorMessage } from "../lib/errors";
 
 interface OrderItem {
   id: number;
@@ -28,7 +30,7 @@ export default function KitchenQueue() {
     setIsLoading(true);
     try {
       const token = getAdminToken();
-      const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/merchant/orders", {
+      const res = await fetch(apiUrl("/api/merchant/orders"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -36,25 +38,27 @@ export default function KitchenQueue() {
       if (!res.ok) throw new Error("Failed to fetch kitchen orders.");
       const data = await res.json();
       setOrders(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to fetch kitchen orders."));
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOrders();
-    // Poll every 10 seconds to keep kitchen queue fresh!
+    const timer = window.setTimeout(fetchOrders, 0);
     const interval = setInterval(fetchOrders, 10000);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleUpdateStatus = async (id: number, newStatus: string) => {
     try {
       const token = getAdminToken();
       const res = await fetch(
-        `https://quickbite-backend-x63n.onrender.com/api/merchant/orders/${id}/status?status=${newStatus}`,
+        apiUrl(`/api/merchant/orders/${id}/status?status=${newStatus}`),
         {
           method: "PUT",
           headers: {
@@ -64,8 +68,8 @@ export default function KitchenQueue() {
       );
       if (!res.ok) throw new Error("Failed to update status.");
       fetchOrders();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to update status."));
     }
   };
 

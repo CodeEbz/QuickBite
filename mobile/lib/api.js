@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAuthToken } from './authStorage';
 
-// Render production endpoint by default
+// Set EXPO_PUBLIC_API_URL to the Railway backend URL for production/team testing.
 const DEFAULT_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://quickbite-backend-x63n.onrender.com';
 
 const api = axios.create({
@@ -33,7 +33,7 @@ api.interceptors.request.use(
 
 /**
  * Utility to dynamically update the API base URL.
- * Useful for switching between local development machines and Render.
+ * Useful for switching between local development machines, Render fallback, and Railway.
  */
 export const updateBaseURL = (newUrl) => {
   if (newUrl) {

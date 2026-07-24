@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
+import { apiUrl } from "../lib/api";
 
 interface Stats {
   totalRevenue: number;
@@ -25,7 +26,7 @@ export default function OverviewTab() {
     const fetchStats = async () => {
       try {
         const token = getAdminToken();
-        const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/admin/stats", {
+        const res = await fetch(apiUrl("/api/admin/stats"), {
           headers: {
             Authorization: `Bearer ${token}`
           }

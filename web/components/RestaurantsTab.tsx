@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
+import { apiUrl } from "../lib/api";
+import { getErrorMessage } from "../lib/errors";
 
 interface Restaurant {
   id: number;
@@ -24,7 +26,7 @@ export default function RestaurantsTab() {
     setIsLoading(true);
     try {
       const token = getAdminToken();
-      const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/admin/restaurants", {
+      const res = await fetch(apiUrl("/api/admin/restaurants"), {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -32,21 +34,22 @@ export default function RestaurantsTab() {
       if (!res.ok) throw new Error("Failed to fetch restaurants.");
       const data = await res.json();
       setRestaurants(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to fetch restaurants."));
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRestaurants();
+    const timer = window.setTimeout(fetchRestaurants, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleUpdateStatus = async (id: number, newStatus: string) => {
     try {
       const token = getAdminToken();
-      const res = await fetch(`https://quickbite-backend-x63n.onrender.com/api/admin/restaurants/${id}/status?status=${newStatus}`, {
+      const res = await fetch(apiUrl(`/api/admin/restaurants/${id}/status?status=${newStatus}`), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`
@@ -54,8 +57,8 @@ export default function RestaurantsTab() {
       });
       if (!res.ok) throw new Error("Failed to update status.");
       fetchRestaurants();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to update status."));
     }
   };
 

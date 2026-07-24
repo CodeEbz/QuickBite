@@ -17,6 +17,8 @@ web/out/
 backend/target/
 uploads/
 backend/uploads/
+server/uploads/
+server/.env
 
 # Environment files
 .env

@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
+import { apiUrl } from "../lib/api";
+import { getErrorMessage } from "../lib/errors";
 
 interface User {
   id: number;
@@ -22,7 +24,7 @@ export default function UsersTab() {
     setIsLoading(true);
     try {
       const token = getAdminToken();
-      const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/admin/users", {
+      const res = await fetch(apiUrl("/api/admin/users"), {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -30,21 +32,22 @@ export default function UsersTab() {
       if (!res.ok) throw new Error("Failed to fetch users.");
       const data = await res.json();
       setUsers(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to fetch users."));
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    const timer = window.setTimeout(fetchUsers, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleToggleVerify = async (id: number) => {
     try {
       const token = getAdminToken();
-      const res = await fetch(`https://quickbite-backend-x63n.onrender.com/api/admin/users/${id}/verify`, {
+      const res = await fetch(apiUrl(`/api/admin/users/${id}/verify`), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`
@@ -52,8 +55,8 @@ export default function UsersTab() {
       });
       if (!res.ok) throw new Error("Failed to toggle verification.");
       fetchUsers();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to toggle verification."));
     }
   };
 

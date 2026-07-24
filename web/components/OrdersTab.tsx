@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
+import { apiUrl } from "../lib/api";
+import { getErrorMessage } from "../lib/errors";
 
 interface OrderItem {
   id: number;
@@ -33,7 +35,7 @@ export default function OrdersTab() {
     setIsLoading(true);
     try {
       const token = getAdminToken();
-      const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/admin/orders", {
+      const res = await fetch(apiUrl("/api/admin/orders"), {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -41,22 +43,23 @@ export default function OrdersTab() {
       if (!res.ok) throw new Error("Failed to fetch orders.");
       const data = await res.json();
       setOrders(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to fetch orders."));
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOrders();
+    const timer = window.setTimeout(fetchOrders, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleCancelOrder = async (id: number) => {
     if (!confirm("Are you sure you want to cancel this order?")) return;
     try {
       const token = getAdminToken();
-      const res = await fetch(`https://quickbite-backend-x63n.onrender.com/api/admin/orders/${id}/cancel`, {
+      const res = await fetch(apiUrl(`/api/admin/orders/${id}/cancel`), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`
@@ -64,8 +67,8 @@ export default function OrdersTab() {
       });
       if (!res.ok) throw new Error("Failed to cancel order.");
       fetchOrders();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "Failed to cancel order."));
     }
   };
 

@@ -10,6 +10,8 @@ import MenuManager from "../components/MenuManager";
 import KitchenQueue from "../components/KitchenQueue";
 
 import { getAdminToken, getAdminRole, getAdminName, setAdminAuth, clearAdminAuth } from "../lib/authStorage";
+import { apiUrl } from "../lib/api";
+import { getErrorMessage } from "../lib/errors";
 
 export default function Home() {
   // Authentication states
@@ -35,23 +37,25 @@ export default function Home() {
 
   // Check if user is already logged in from sessionStorage on mount
   useEffect(() => {
-    const token = getAdminToken();
-    const name = getAdminName();
-    const role = getAdminRole();
-    if (token && (role === "ADMIN" || role === "RESTAURANT")) {
-      setIsLoggedIn(true);
-      setUserName(name || "User");
-      setUserRole(role);
-      
-      // Default tabs
-      if (role === "RESTAURANT") {
-        setActiveTab("kitchen");
+    const timer = window.setTimeout(() => {
+      const token = getAdminToken();
+      const name = getAdminName();
+      const role = getAdminRole();
+      if (token && (role === "ADMIN" || role === "RESTAURANT")) {
+        setIsLoggedIn(true);
+        setUserName(name || "User");
+        setUserRole(role);
+
+        if (role === "RESTAURANT") {
+          setActiveTab("kitchen");
+        } else {
+          setActiveTab("overview");
+        }
       } else {
-        setActiveTab("overview");
+        clearAdminAuth();
       }
-    } else {
-      clearAdminAuth();
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // Fetch restaurant profile details if merchant
@@ -60,7 +64,7 @@ export default function Home() {
       const fetchProfile = async () => {
         try {
           const token = getAdminToken();
-          const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/merchant/profile", {
+          const res = await fetch(apiUrl("/api/merchant/profile"), {
             headers: {
               Authorization: `Bearer ${token}`
             }
@@ -88,7 +92,7 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await fetch("https://quickbite-backend-x63n.onrender.com/api/auth/login", {
+      const response = await fetch(apiUrl("/api/auth/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,8 +130,8 @@ export default function Home() {
       } else {
         setActiveTab("overview");
       }
-    } catch (err: any) {
-      setError(err.message || "Unable to login. Please try again later.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Unable to login. Please try again later."));
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +148,7 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await fetch("https://quickbite-backend-x63n.onrender.com/api/auth/register-merchant", {
+      const response = await fetch(apiUrl("/api/auth/register-merchant"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -176,8 +180,8 @@ export default function Home() {
       setRestaurantName(restaurantNameInput.trim());
       setIsLoggedIn(true);
       setActiveTab("kitchen");
-    } catch (err: any) {
-      setError(err.message || "Unable to register merchant profile.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Unable to register merchant profile."));
     } finally {
       setIsLoading(false);
     }

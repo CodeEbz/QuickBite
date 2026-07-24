@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
+import { apiUrl } from "../lib/api";
 
 interface MenuItem {
   id: number;
@@ -38,7 +39,7 @@ export default function MenuManager() {
     setIsLoading(true);
     try {
       const token = getAdminToken();
-      const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/merchant/menu", {
+      const res = await fetch(apiUrl("/api/merchant/menu"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -69,7 +70,7 @@ export default function MenuManager() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/merchant/menu/images", {
+      const res = await fetch(apiUrl("/api/merchant/menu/images"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -100,7 +101,7 @@ export default function MenuManager() {
 
     try {
       const token = getAdminToken();
-      const res = await fetch("https://quickbite-backend-x63n.onrender.com/api/merchant/menu", {
+      const res = await fetch(apiUrl("/api/merchant/menu"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -162,7 +163,7 @@ export default function MenuManager() {
     try {
       const token = getAdminToken();
       for (const sample of samples) {
-        await fetch("https://quickbite-backend-x63n.onrender.com/api/merchant/menu", {
+        await fetch(apiUrl("/api/merchant/menu"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -184,7 +185,7 @@ export default function MenuManager() {
 
     try {
       const token = getAdminToken();
-      const res = await fetch(`https://quickbite-backend-x63n.onrender.com/api/merchant/menu/${id}`, {
+      const res = await fetch(apiUrl(`/api/merchant/menu/${id}`), {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
