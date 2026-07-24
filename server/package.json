@@ -11,7 +11,7 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:dev": "prisma migrate dev",
     "seed": "node prisma/seed.js",
-    "start:migrate": "npm run prisma:migrate && npm start"
+    "start:migrate": "prisma migrate resolve --rolled-back 20260724220000_add_order_ratings || true && npm run prisma:migrate && npm start"
   },
   "dependencies": {
     "@prisma/client": "^6.13.0",

@@ -1,4 +1,4 @@
-﻿ALTER TABLE "Order"
+ALTER TABLE "Order"
 ADD COLUMN "restaurantRating" INTEGER,
 ADD COLUMN "driverRating" INTEGER,
 ADD COLUMN "appRating" INTEGER,
