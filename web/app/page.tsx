@@ -493,8 +493,8 @@ export default function Home() {
                 {[
                   { id: "kitchen", label: "Kitchen Queue", icon: "🍳" },
                   { id: "menu", label: "Menu Manager", icon: "📖" },
-                  { id: "chat", label: "Customer Chat", icon: "Chat" },
-                  { id: "profile", label: "Profile", icon: "Profile" },
+                  { id: "chat", label: "Customer Chat", icon: "??" },
+                  { id: "profile", label: "Profile", icon: "??" },
                 ].map((tab) => (
                   <button
                     key={tab.id}
