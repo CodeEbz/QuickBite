@@ -8,6 +8,8 @@ import UsersTab from "../components/UsersTab";
 import ReportsTab from "../components/ReportsTab";
 import MenuManager from "../components/MenuManager";
 import KitchenQueue from "../components/KitchenQueue";
+import MerchantChat from "../components/MerchantChat";
+import MerchantProfile from "../components/MerchantProfile";
 
 import { getAdminToken, getAdminRole, getAdminName, setAdminAuth, clearAdminAuth } from "../lib/authStorage";
 import { apiUrl } from "../lib/api";
@@ -33,7 +35,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   
   // Dashboard states
-  const [activeTab, setActiveTab] = useState("overview"); // overview | restaurants | orders | users | reports | kitchen | menu
+  const [activeTab, setActiveTab] = useState("overview"); // overview | restaurants | orders | users | reports | kitchen | menu | chat | profile
 
   // Check if user is already logged in from sessionStorage on mount
   useEffect(() => {
@@ -218,6 +220,10 @@ export default function Home() {
         return <KitchenQueue />;
       case "menu":
         return <MenuManager />;
+      case "chat":
+        return <MerchantChat />;
+      case "profile":
+        return <MerchantProfile />;
       
       default:
         return userRole === "RESTAURANT" ? <KitchenQueue /> : <OverviewTab />;
@@ -487,6 +493,8 @@ export default function Home() {
                 {[
                   { id: "kitchen", label: "Kitchen Queue", icon: "🍳" },
                   { id: "menu", label: "Menu Manager", icon: "📖" },
+                  { id: "chat", label: "Customer Chat", icon: "Chat" },
+                  { id: "profile", label: "Profile", icon: "Profile" },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -562,6 +570,8 @@ export default function Home() {
                 <>
                   <option value="kitchen">Kitchen Queue</option>
                   <option value="menu">Menu Manager</option>
+                  <option value="chat">Chat</option>
+                  <option value="profile">Profile</option>
                 </>
               )}
             </select>
@@ -589,7 +599,7 @@ export default function Home() {
                 <p className="text-xs text-zinc-500 mt-2">
                   {userRole === "ADMIN" 
                     ? "Platform administration control node and configuration interface"
-                    : "Merchant dashboard portal for managing menus and dispatching orders"}
+                    : "Merchant dashboard portal for managing menus, chats, profile, and dispatching orders"}
                 </p>
               </div>
               <div className="text-xs text-zinc-500 font-semibold hidden md:block">
