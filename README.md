@@ -6,14 +6,14 @@ A three-sided food delivery platform for customers, restaurants, drivers, mercha
 
 - `/mobile` - React Native + Expo mobile app
 - `/web` - Next.js + Tailwind admin and merchant portal
-- `/server` - Node.js + Express + Prisma API for Railway
-- `/backend` - legacy Spring Boot + PostgreSQL fallback
+- `/server` - Node.js + Express + Prisma API
+- `/backend` - legacy Spring Boot reference only; do not deploy
 
 ## Deployment
 
 - Mobile: Expo / EAS
 - Web: Vercel or local Next.js
-- Backend API: Railway
+- Backend API: Node.js host TBD
 - Database: Neon Postgres
 - Images: Cloudinary recommended for durable uploads
 
@@ -30,10 +30,7 @@ npm run dev
 
 ## Legacy Java Backend
 
-```bash
-cd backend
-./mvnw spring-boot:run
-```
+The Spring Boot backend is retained for reference only. The active backend is `/server`.
 
 ## Mobile
 
@@ -43,7 +40,7 @@ copy .env.example .env
 npx expo start
 ```
 
-Set `EXPO_PUBLIC_API_URL` to the Railway backend URL before testing on phones.
+Set `EXPO_PUBLIC_API_URL` to the deployed Node backend URL before testing on phones.
 
 ## Web
 
@@ -53,15 +50,16 @@ copy .env.example .env.local
 npm run dev
 ```
 
-Set `NEXT_PUBLIC_API_URL` to the Railway backend URL.
+Set `NEXT_PUBLIC_API_URL` to the deployed Node backend URL.
 
-## Railway + Neon Setup
+## Neon Postgres Setup
 
-1. Create a Neon Postgres database and copy the connection string with `sslmode=require`.
-2. Create a Railway service from this repo with root directory `server`.
-3. Add `DATABASE_URL`, `JWT_SECRET`, Paystack, Cloudinary, and `PUBLIC_BASE_URL` variables.
-4. Deploy using the `server/railway.json` start command.
-5. Run the mobile and web apps with their API URL env vars pointed at Railway.
+1. Create a Neon project.
+2. Copy the Neon Postgres connection string with `sslmode=require`.
+3. Set `DATABASE_URL` on the Node backend host.
+4. Run Prisma migrations with the direct Neon connection string.
+5. Configure `JWT_SECRET`, Paystack, Cloudinary, `PUBLIC_BASE_URL`, and client origin variables on the backend host.
+6. Run the mobile and web apps with their API URL env vars pointed at the deployed Node backend.
 
 ## Demo Password
 

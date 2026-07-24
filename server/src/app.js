@@ -8,7 +8,10 @@ const { toJson } = require('./utils/respond');
 const app = express();
 
 app.use(cors({
-  origin: (_origin, cb) => cb(null, true),
+  origin: (origin, cb) => {
+    if (!origin || config.allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error('CORS origin is not allowed.'));
+  },
   credentials: true
 }));
 app.use(morgan('dev'));

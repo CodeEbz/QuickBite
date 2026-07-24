@@ -39,6 +39,7 @@ export default function CheckoutScreen({ route, navigation }) {
   const buildOrderPayload = () => ({
     restaurantId: restaurant.id,
     items: cart.items.map((i) => ({
+      menuItemId: i.id,
       itemName: i.name,
       quantity: i.quantity,
       price: i.price,

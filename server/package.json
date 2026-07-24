@@ -1,7 +1,7 @@
 {
   "name": "quickbite-server",
   "version": "1.0.0",
-  "description": "QuickBite Node.js API for Railway and Neon Postgres",
+  "description": "QuickBite Node.js API for Neon Postgres",
   "main": "src/index.js",
   "type": "commonjs",
   "scripts": {
@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:dev": "prisma migrate dev",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "start:migrate": "npm run prisma:migrate && npm start"
   },
   "dependencies": {
     "@prisma/client": "^6.13.0",
@@ -22,11 +23,11 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "prisma": "^6.13.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9",
-    "prisma": "^6.13.0"
+    "nodemon": "^3.1.9"
   },
   "engines": {
     "node": ">=20"

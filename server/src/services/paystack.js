@@ -4,6 +4,7 @@ const { httpError } = require('../utils/respond');
 
 async function initializePayment(email, amount, callbackUrl) {
   if (!config.paystackSecretKey) {
+    if (config.nodeEnv === 'production') throw httpError('Paystack is not configured.', 500);
     return {
       authorizationUrl: callbackUrl || config.appBaseUrl,
       reference: `dev-${Date.now()}`,
@@ -30,6 +31,7 @@ async function initializePayment(email, amount, callbackUrl) {
 async function verifyPayment(reference) {
   if (!reference) throw httpError('Payment reference is required.');
   if (!config.paystackSecretKey && reference.startsWith('dev-')) {
+    if (config.nodeEnv === 'production') throw httpError('Paystack is not configured.', 500);
     return { successful: true, reference, status: 'success', amount: null };
   }
 
