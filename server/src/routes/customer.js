@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../prisma');
 const paystack = require('../services/paystack');
+const config = require('../config');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { asyncHandler, httpError, toJson } = require('../utils/respond');
 
