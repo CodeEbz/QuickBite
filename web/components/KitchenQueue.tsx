@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
 import { apiUrl } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
+import { formatCurrency } from "../lib/format";
 
 interface OrderItem {
   id: number;
@@ -16,7 +17,7 @@ interface Order {
   id: number;
   customerName: string;
   status: string;
-  totalPrice: number;
+  totalPrice: number | string;
   createdAt: string;
   items: OrderItem[];
 }
@@ -139,7 +140,7 @@ export default function KitchenQueue() {
               <div className="flex items-center justify-between md:justify-end gap-6 border-t border-zinc-900 md:border-t-0 pt-3 md:pt-0">
                 <div className="text-right">
                   <span className="text-xs text-zinc-500 block">Order Total</span>
-                  <span className="font-extrabold text-white">${order.totalPrice.toFixed(2)}</span>
+                  <span className="font-extrabold text-white">{formatCurrency(order.totalPrice)}</span>
                 </div>
 
                 {order.status === "PENDING" && (

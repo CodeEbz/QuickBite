@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
 import { apiUrl } from "../lib/api";
+import { formatCurrency } from "../lib/format";
 
 interface MenuItem {
   id: number;
   name: string;
   description: string;
-  price: number;
+  price: number | string;
   image: string;
   category: string;
 }
@@ -351,7 +352,7 @@ export default function MenuManager() {
                   />
                   <div>
                     <h4 className="font-bold text-white text-sm leading-snug">{item.name}</h4>
-                    <p className="text-xs text-zinc-500 mt-0.5">${item.price.toFixed(2)} • {item.category}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{formatCurrency(item.price)} • {item.category}</p>
                   </div>
                 </div>
                 <button

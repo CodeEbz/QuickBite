@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
 import { apiUrl } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
+import { formatRating, toNumber } from "../lib/format";
 
 interface Restaurant {
   id: number;
@@ -11,7 +12,7 @@ interface Restaurant {
   ownerName: string;
   email: string;
   status: "ACTIVE" | "PENDING_APPROVAL" | "SUSPENDED";
-  rating: number;
+  rating: number | string;
   cuisineType: string;
   image: string;
 }
@@ -141,7 +142,7 @@ export default function RestaurantsTab() {
                   </td>
                   <td className="py-4">
                     <span className="inline-flex items-center text-zinc-300 font-semibold">
-                      <span className="text-yellow-400 mr-1">★</span> {res.rating > 0 ? res.rating.toFixed(1) : "N/A"}
+                      <span className="text-yellow-400 mr-1">★</span> {toNumber(res.rating) > 0 ? formatRating(res.rating) : "N/A"}
                     </span>
                   </td>
                   <td className="py-4">

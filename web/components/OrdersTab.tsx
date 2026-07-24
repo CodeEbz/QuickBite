@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
 import { apiUrl } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
+import { formatCurrency } from "../lib/format";
 
 interface OrderItem {
   id: number;
@@ -19,7 +20,7 @@ interface Order {
     name: string;
   };
   driverName: string;
-  totalPrice: number;
+  totalPrice: number | string;
   status: "PENDING" | "PREPARING" | "DELIVERING" | "DELIVERED" | "CANCELLED";
   createdAt: string;
   items: OrderItem[];
@@ -142,7 +143,7 @@ export default function OrdersTab() {
                   <td className="py-4 text-zinc-400 truncate max-w-[200px]" title={o.items?.map(i => `${i.quantity}x ${i.itemName}`).join(", ") || ""}>
                     {o.items?.map(i => `${i.quantity}x ${i.itemName}`).join(", ") || "No items"}
                   </td>
-                  <td className="py-4 font-bold text-white">${o.totalPrice.toFixed(2)}</td>
+                  <td className="py-4 font-bold text-white">{formatCurrency(o.totalPrice)}</td>
                   <td className="py-4">
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${

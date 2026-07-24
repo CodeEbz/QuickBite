@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { getAdminToken } from "../lib/authStorage";
 import { apiUrl } from "../lib/api";
+import { formatCurrency, toNumber } from "../lib/format";
 
 interface Stats {
-  totalRevenue: number;
-  totalOrders: number;
-  activeDrivers: number;
-  pendingApprovals: number;
-  totalRestaurants: number;
+  totalRevenue: number | string;
+  totalOrders: number | string;
+  activeDrivers: number | string;
+  pendingApprovals: number | string;
+  totalRestaurants: number | string;
 }
 
 export default function OverviewTab() {
@@ -34,11 +35,11 @@ export default function OverviewTab() {
         if (!res.ok) throw new Error("Failed to load statistics.");
         const data = await res.json();
         setStats({
-          totalRevenue: data.totalRevenue || 0,
-          totalOrders: data.totalOrders || 0,
-          activeDrivers: data.activeDrivers || 0,
-          pendingApprovals: data.pendingApprovals || 0,
-          totalRestaurants: data.totalRestaurants || 0
+          totalRevenue: data.totalRevenue ?? 0,
+          totalOrders: data.totalOrders ?? 0,
+          activeDrivers: data.activeDrivers ?? 0,
+          pendingApprovals: data.pendingApprovals ?? 0,
+          totalRestaurants: data.totalRestaurants ?? 0
         });
       } catch (err) {
         console.error("Error fetching stats:", err);
@@ -50,10 +51,10 @@ export default function OverviewTab() {
   }, []);
 
   const statsList = [
-    { label: "Total Revenue", value: `$${stats.totalRevenue.toFixed(2)}`, change: "Live sales", icon: "💰", color: "text-emerald-500" },
-    { label: "Active Orders", value: stats.totalOrders.toString(), change: "Cumulative orders", icon: "🛒", color: "text-orange-500" },
-    { label: "Active Drivers", value: stats.activeDrivers.toString(), change: "Ready for courier dispatch", icon: "🚴", color: "text-blue-500" },
-    { label: "Pending Approvals", value: stats.pendingApprovals.toString(), change: "Merchant applications", icon: "⏳", color: "text-amber-500" },
+    { label: "Total Revenue", value: formatCurrency(stats.totalRevenue), change: "Live sales", icon: "💰", color: "text-emerald-500" },
+    { label: "Active Orders", value: toNumber(stats.totalOrders).toString(), change: "Cumulative orders", icon: "🛒", color: "text-orange-500" },
+    { label: "Active Drivers", value: toNumber(stats.activeDrivers).toString(), change: "Ready for courier dispatch", icon: "🚴", color: "text-blue-500" },
+    { label: "Pending Approvals", value: toNumber(stats.pendingApprovals).toString(), change: "Merchant applications", icon: "⏳", color: "text-amber-500" },
   ];
 
   const recentLogs = [
