@@ -38,6 +38,7 @@ model User {
   verified     Boolean   @default(false)
   otp          String?
   otpExpiry    DateTime?
+  phone        String?
   profileImage String?
   createdAt    DateTime  @default(now())
 
@@ -83,6 +84,7 @@ model Order {
   customerEmail           String
   restaurantId            Int
   driverName              String?
+  driverPhone             String?
   driverLatitude          Float?
   driverLongitude         Float?
   driverLocationUpdatedAt DateTime?
@@ -131,3 +133,5 @@ model ChatMessage {
   @@index([customerEmail, createdAt])
   @@index([restaurantId, createdAt])
 }
+
+

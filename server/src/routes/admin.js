@@ -50,7 +50,7 @@ router.put('/orders/:id/cancel', asyncHandler(async (req, res) => {
 router.get('/users', asyncHandler(async (_req, res) => {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
-    select: { id: true, name: true, email: true, role: true, verified: true, profileImage: true, createdAt: true }
+    select: { id: true, name: true, email: true, role: true, verified: true, phone: true, profileImage: true, createdAt: true }
   });
   res.json(toJson(users));
 }));
@@ -61,9 +61,10 @@ router.put('/users/:id/verify', asyncHandler(async (req, res) => {
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: { verified: !user.verified },
-    select: { id: true, name: true, email: true, role: true, verified: true, profileImage: true, createdAt: true }
+    select: { id: true, name: true, email: true, role: true, verified: true, phone: true, profileImage: true, createdAt: true }
   });
   res.json(toJson(updated));
 }));
 
 module.exports = router;
+

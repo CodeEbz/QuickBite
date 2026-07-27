@@ -10,15 +10,20 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout, updateUserProfile } from '../../store/slices/authSlice';
 import api from '../../lib/api';
 import { pickImageFromLibrary, uploadImage } from '../../lib/imageUpload';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNaira } from '../../lib/format';
 
 const DRIVER_TABS = [
   { id: 'board', label: 'Board', icon: 'radio-outline' },
@@ -27,6 +32,10 @@ const DRIVER_TABS = [
 ];
 
 export default function DriverHomeScreen() {
+  const insets = useSafeAreaInsets();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+
   const [isOnline, setIsOnline] = useState(true);
   const [activeTab, setActiveTab] = useState('board');
   const [availableOrders, setAvailableOrders] = useState([]);
@@ -35,11 +44,12 @@ export default function DriverHomeScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [profileNameDraft, setProfileNameDraft] = useState(user?.name || '');
+  const [phoneDraft, setPhoneDraft] = useState(user?.phone || '');
+  const [passwordDraft, setPasswordDraft] = useState('');
   const [locationStatus, setLocationStatus] = useState('idle');
   const [error, setError] = useState(null);
 
-  const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
   const completedDeliveries = deliveryHistory.filter((order) => order.status === 'DELIVERED').length;
   const totalEarned = deliveryHistory
     .filter((order) => order.status === 'DELIVERED')
@@ -47,9 +57,11 @@ export default function DriverHomeScreen() {
 
   // Animations
   const mapPulseAnim = useRef(new Animated.Value(1)).current;
+  const introAnim = useRef(new Animated.Value(0)).current;
 
   // Radar Pulsing Animation
   useEffect(() => {
+    Animated.timing(introAnim, { toValue: 1, duration: 700, useNativeDriver: true }).start();
     if (isOnline) {
       Animated.loop(
         Animated.sequence([
@@ -84,13 +96,9 @@ export default function DriverHomeScreen() {
       const currentOrder = activeRes.data || null;
       setActiveOrder(currentOrder);
 
-      // 2. Fetch available orders nearby if not currently carrying an order
-      if (!currentOrder) {
-        const availRes = await api.get('/api/driver/orders/available');
-        setAvailableOrders(Array.isArray(availRes.data) ? availRes.data : []);
-      } else {
-        setAvailableOrders([]);
-      }
+      // Keep the offer board visible even while a driver is carrying an active order.
+      const availRes = await api.get('/api/driver/orders/available');
+      setAvailableOrders(Array.isArray(availRes.data) ? availRes.data : []);
 
       const historyRes = await api.get('/api/driver/orders/history');
       setDeliveryHistory(Array.isArray(historyRes.data) ? historyRes.data : []);
@@ -114,7 +122,7 @@ export default function DriverHomeScreen() {
     try {
       setError(null);
       const response = await api.put(`/api/driver/orders/${id}/accept`);
-      setActiveOrder(response.data);
+      setActiveOrder((current) => current || response.data);
       setAvailableOrders((prev) => prev.filter((o) => o.id !== id));
     } catch (err) {
       const message = err.response?.data?.error || 'Failed to accept order. It may have been taken by another driver.';
@@ -204,10 +212,40 @@ export default function DriverHomeScreen() {
     };
   }, [activeOrder?.id, activeOrder?.status]);
 
+  useEffect(() => {
+    setProfileNameDraft(user?.name || '');
+    setPhoneDraft(user?.phone || '');
+  }, [user?.name, user?.phone]);
+
   const handleLogout = () => {
-    dispatch(logout());
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => dispatch(logout()) },
+    ]);
   };
 
+
+  const handleSaveProfile = async () => {
+    try {
+      const payload = {
+        name: profileNameDraft.trim(),
+        phone: phoneDraft.trim(),
+      };
+      if (passwordDraft.trim()) payload.password = passwordDraft;
+      const response = await api.put('/api/users/me', payload);
+      const updatedUser = response.data;
+      dispatch(updateUserProfile({ name: updatedUser.name, phone: updatedUser.phone }));
+      await AsyncStorage.multiSet([
+        ['userName', updatedUser.name || ''],
+        ['userPhone', updatedUser.phone || ''],
+      ]);
+      setPasswordDraft('');
+      alert('Profile details saved.');
+    } catch (err) {
+      const message = err.response?.data?.error || err.message || 'Unable to save profile details.';
+      alert(message);
+    }
+  };
   const handleProfileImageUpload = async () => {
     setIsUploadingPhoto(true);
     try {
@@ -216,8 +254,9 @@ export default function DriverHomeScreen() {
 
       const response = await uploadImage('/api/users/me/profile-image', asset);
       const updatedUser = response.data;
-      dispatch(updateUserProfile({ profileImage: updatedUser.profileImage }));
-      await AsyncStorage.setItem('profileImage', updatedUser.profileImage || '');
+      const imageWithVersion = updatedUser.profileImage ? updatedUser.profileImage + (updatedUser.profileImage.includes('?') ? '&' : '?') + 'v=' + Date.now() : '';
+      dispatch(updateUserProfile({ profileImage: imageWithVersion }));
+      await AsyncStorage.setItem('profileImage', imageWithVersion);
     } catch (err) {
       const message = err.response?.data?.error || err.message || 'Unable to update profile photo.';
       alert(message);
@@ -233,6 +272,7 @@ export default function DriverHomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+      <KeyboardAvoidingView style={styles.keyboardWrap} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -261,13 +301,18 @@ export default function DriverHomeScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#FF5C00" />
         }
       >
+
+        <Animated.View style={[styles.infoStrip, { opacity: introAnim, transform: [{ translateY: introAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
+          <Ionicons name="navigate-circle-outline" size={18} color="#FF5C00" />
+          <Text style={styles.infoStripText}>Go online, accept nearby orders, share live location, and complete deliveries from this board.</Text>
+        </Animated.View>
         {/* Status Dashboard */}
         <View style={styles.dashboardCard}>
           <View style={styles.statusRow}>
@@ -289,7 +334,7 @@ export default function DriverHomeScreen() {
 
           <View style={styles.statsRow}>
             <View style={styles.statCol}>
-              <Text style={styles.statValue}>${(totalEarned || completedDeliveries * 12.50).toFixed(2)}</Text>
+              <Text style={styles.statValue}>{formatNaira(totalEarned || completedDeliveries * 12.50)}</Text>
               <Text style={styles.statLabel}>Today's Pay</Text>
             </View>
             <View style={styles.statCol}>
@@ -338,7 +383,7 @@ export default function DriverHomeScreen() {
 
               <View style={styles.payoutRow}>
                 <Text style={styles.payoutLabel}>Total Delivery Payout</Text>
-                <Text style={styles.payoutValue}>${Number(activeOrder.totalPrice).toFixed(2)}</Text>
+                <Text style={styles.payoutValue}>{formatNaira(Number(activeOrder.totalPrice))}</Text>
               </View>
               <View style={styles.locationShareRow}>
                 <Ionicons
@@ -400,7 +445,7 @@ export default function DriverHomeScreen() {
         )}
 
         {/* NEARBY AVAILABLE OFFERS */}
-        {isOnline && !activeOrder && (
+        {isOnline && (
           <View style={styles.jobsSection}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Available Orders Nearby ({availableOrders.length})</Text>
@@ -427,7 +472,7 @@ export default function DriverHomeScreen() {
                       <Ionicons name="restaurant" size={14} color="#FF5C00" />
                       <Text style={styles.jobResName}>{job.restaurant?.name || 'Partner Restaurant'}</Text>
                     </View>
-                    <Text style={styles.jobPayout}>${Number(job.totalPrice).toFixed(2)}</Text>
+                    <Text style={styles.jobPayout}>{formatNaira(Number(job.totalPrice))}</Text>
                   </View>
 
                   <Text style={styles.jobCustomer}>Customer: {job.customerName}</Text>
@@ -441,7 +486,7 @@ export default function DriverHomeScreen() {
                     style={styles.acceptBtn}
                     activeOpacity={0.9}
                   >
-                    <Text style={styles.acceptBtnText}>Accept Offer</Text>
+                    <Text style={styles.acceptBtnText}>{activeOrder ? 'Accept Next' : 'Accept Offer'}</Text>
                     <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" style={{ marginLeft: 6 }} />
                   </TouchableOpacity>
                 </View>
@@ -474,7 +519,7 @@ export default function DriverHomeScreen() {
                       <Ionicons name="restaurant" size={14} color="#FF5C00" />
                       <Text style={styles.jobResName}>{order.restaurant?.name || 'Partner Restaurant'}</Text>
                     </View>
-                    <Text style={styles.jobPayout}>${Number(order.totalPrice).toFixed(2)}</Text>
+                    <Text style={styles.jobPayout}>{formatNaira(Number(order.totalPrice))}</Text>
                   </View>
                   <Text style={styles.jobCustomer}>Customer: {order.customerName}</Text>
                   <Text style={styles.jobItems} numberOfLines={2}>
@@ -516,6 +561,32 @@ export default function DriverHomeScreen() {
               <Text style={styles.emptyTitle}>{user?.name || 'Driver Partner'}</Text>
               <Text style={styles.emptyText}>{user?.email || 'driver@quickbite.com'}</Text>
               <Text style={styles.emptyText}>{completedDeliveries} deliveries completed</Text>
+              <TextInput
+                value={profileNameDraft}
+                onChangeText={setProfileNameDraft}
+                placeholder="Full name"
+                placeholderTextColor="#8A8A8E"
+                style={styles.profileInput}
+              />
+              <TextInput
+                value={phoneDraft}
+                onChangeText={setPhoneDraft}
+                placeholder="Phone number"
+                placeholderTextColor="#8A8A8E"
+                keyboardType="phone-pad"
+                style={styles.profileInput}
+              />
+              <TextInput
+                value={passwordDraft}
+                onChangeText={setPasswordDraft}
+                placeholder="New password (optional)"
+                placeholderTextColor="#8A8A8E"
+                secureTextEntry
+                style={styles.profileInput}
+              />
+              <TouchableOpacity onPress={handleSaveProfile} style={styles.photoBtn}>
+                <Text style={styles.photoBtnText}>Save Profile</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={handleProfileImageUpload} disabled={isUploadingPhoto} style={styles.photoBtn}>
                 <Text style={styles.photoBtnText}>{user?.profileImage ? 'Change Display Photo' : 'Add Display Photo'}</Text>
               </TouchableOpacity>
@@ -527,11 +598,15 @@ export default function DriverHomeScreen() {
           </View>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardWrap: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: '#FAF9F6',
@@ -599,7 +674,23 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
-    paddingBottom: 40,
+  },
+  infoStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 18,
+    gap: 9,
+  },
+  infoStripText: {
+    color: '#495057',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+    flex: 1,
   },
   dashboardCard: {
     backgroundColor: '#FFFFFF',
@@ -948,6 +1039,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginTop: 4,
   },
+  profileInput: {
+    width: '100%',
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: 12,
+    color: '#1E1E24',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
   profileAvatar: {
     width: 72,
     height: 72,
@@ -1001,3 +1103,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+
+
+
+
+
+
+
+
+

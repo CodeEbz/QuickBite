@@ -37,13 +37,14 @@ const getApiErrorMessage = (error, fallback) => {
 // Async Thunks
 export const register = createAsyncThunk(
   'auth/register',
-  async ({ name, email, password, role, restaurantName, cuisineType }, { rejectWithValue }) => {
+  async ({ name, email, password, phone, role, restaurantName, cuisineType }, { rejectWithValue }) => {
     try {
       const response = role === 'RESTAURANT'
         ? await api.post('/api/auth/register-merchant', {
             ownerName: name,
             email,
             password,
+            phone,
             restaurantName,
             cuisineType,
           })
@@ -51,19 +52,21 @@ export const register = createAsyncThunk(
             name,
             email,
             password,
+            phone,
             role,
           });
       const authPayload = response.data?.auth?.token ? response.data.auth : response.data?.token ? response.data : null;
       if (authPayload?.token) {
-        const { token, role: returnedRole, name: returnedName, profileImage } = authPayload;
+        const { token, role: returnedRole, name: returnedName, phone: returnedPhone, profileImage } = authPayload;
         await saveAuthToken(token);
         await AsyncStorage.multiSet([
           ['role', returnedRole],
           ['userName', returnedName],
           ['userEmail', email],
+          ['userPhone', returnedPhone || ''],
           ['profileImage', profileImage || ''],
         ]);
-        return { token, role: returnedRole, name: returnedName, email, profileImage, verified: true };
+        return { token, role: returnedRole, name: returnedName, email, phone: returnedPhone, profileImage, verified: true };
       }
       return { message: response.data?.message || response.data, email: response.data?.email || email, verified: false };
     } catch (error) {
@@ -109,17 +112,18 @@ export const login = createAsyncThunk(
         password,
       });
       // Backend returns AuthResponse: { token, role, name }
-      const { token, role, name, profileImage } = response.data;
+      const { token, role, name, phone, profileImage } = response.data;
       
       await saveAuthToken(token);
       await AsyncStorage.multiSet([
         ['role', role],
         ['userName', name],
         ['userEmail', email],
+        ['userPhone', phone || ''],
         ['profileImage', profileImage || '']
       ]);
 
-      return { token, role, name, email, profileImage };
+      return { token, role, name, email, phone, profileImage };
     } catch (error) {
       return rejectWithValue(getApiErrorMessage(error, 'Login failed'));
     }
@@ -131,7 +135,7 @@ export const logout = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await removeAuthToken();
-      await AsyncStorage.multiRemove(['role', 'userName', 'userEmail', 'profileImage']);
+      await AsyncStorage.multiRemove(['role', 'userName', 'userEmail', 'userPhone', 'profileImage']);
       return null;
     } catch (error) {
       return rejectWithValue('Logout failed');
@@ -143,7 +147,7 @@ export const loadStoredAuth = createAsyncThunk(
   'auth/loadStoredAuth',
   async (_, { rejectWithValue }) => {
     try {
-      const keys = ['role', 'userName', 'userEmail', 'profileImage'];
+      const keys = ['role', 'userName', 'userEmail', 'userPhone', 'profileImage'];
       const stores = await AsyncStorage.multiGet(keys);
       const token = await getAuthToken();
       const authData = {};
@@ -158,6 +162,7 @@ export const loadStoredAuth = createAsyncThunk(
           role: authData.role,
           name: authData.userName || '',
           email: authData.userEmail || '',
+          phone: authData.userPhone || '',
           profileImage: authData.profileImage || '',
         };
       }
@@ -209,6 +214,7 @@ const authSlice = createSlice({
           state.user = {
             name: action.payload.name,
             email: action.payload.email,
+            phone: action.payload.phone,
             profileImage: action.payload.profileImage,
           };
         } else {
@@ -264,7 +270,8 @@ const authSlice = createSlice({
         state.user = {
           name: action.payload.name,
           email: action.payload.email,
-          profileImage: action.payload.profileImage,
+          phone: action.payload.phone,
+            profileImage: action.payload.profileImage,
         };
       })
       .addCase(login.rejected, (state, action) => {
@@ -296,6 +303,7 @@ const authSlice = createSlice({
           state.user = {
             name: action.payload.name,
             email: action.payload.email,
+            phone: action.payload.phone,
             profileImage: action.payload.profileImage,
           };
         }
@@ -308,3 +316,5 @@ const authSlice = createSlice({
 
 export const { clearErrors, resetRegisterStatus, setOtpEmail, updateUserProfile } = authSlice.actions;
 export default authSlice.reducer;
+
+

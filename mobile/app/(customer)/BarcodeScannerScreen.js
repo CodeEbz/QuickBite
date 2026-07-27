@@ -13,19 +13,37 @@ import { pickImageFromLibrary } from '../../lib/imageUpload';
 import { Ionicons } from '@expo/vector-icons';
 
 const FOOD_HINTS = [
-  { label: 'Burger', query: 'Burgers', icon: 'fast-food-outline' },
-  { label: 'Pizza', query: 'Pizza', icon: 'pizza-outline' },
-  { label: 'Sushi', query: 'Asian', icon: 'fish-outline' },
-  { label: 'Rice/Noodles', query: 'Asian', icon: 'restaurant-outline' },
-  { label: 'Dessert', query: 'Desserts', icon: 'ice-cream-outline' },
-  { label: 'Drink', query: 'Drinks', icon: 'beer-outline' },
-  { label: 'Grill', query: 'Grill', icon: 'flame-outline' },
+  { label: 'Burger', query: 'Burgers', icon: 'fast-food-outline', aliases: ['burger', 'hamburger', 'cheeseburger'] },
+  { label: 'Pizza', query: 'Pizza', icon: 'pizza-outline', aliases: ['pizza'] },
+  { label: 'Sushi', query: 'Asian', icon: 'fish-outline', aliases: ['sushi'] },
+  { label: 'Rice', query: 'Rice', icon: 'restaurant-outline', aliases: ['rice', 'jollof', 'fried-rice', 'fried rice'] },
+  { label: 'Noodles', query: 'Noodles', icon: 'restaurant-outline', aliases: ['noodle', 'noodles', 'ramen', 'pasta', 'spaghetti'] },
+  { label: 'Dessert', query: 'Desserts', icon: 'ice-cream-outline', aliases: ['dessert', 'cake', 'icecream', 'ice-cream', 'sweet'] },
+  { label: 'Drink', query: 'Drinks', icon: 'beer-outline', aliases: ['drink', 'drinks', 'juice', 'soda', 'water'] },
+  { label: 'Grill', query: 'Grill', icon: 'flame-outline', aliases: ['grill', 'grilled', 'barbecue', 'bbq', 'suya'] },
 ];
+
+const UNKNOWN_FOOD = { label: 'This food', query: '__UNAVAILABLE__' };
+
+const inferHintFromAsset = (asset) => {
+  const source = [asset?.fileName, asset?.uri]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return FOOD_HINTS.find((hint) => hint.aliases.some((alias) => source.includes(alias))) || null;
+};
 
 export default function BarcodeScannerScreen({ navigation }) {
   const [photo, setPhoto] = useState(null);
   const [selectedHint, setSelectedHint] = useState(null);
   const [error, setError] = useState(null);
+
+  const setFoodPhoto = (asset) => {
+    setPhoto(asset);
+    setSelectedHint(inferHintFromAsset(asset));
+    setError(null);
+  };
 
   const takePhoto = async () => {
     try {
@@ -42,7 +60,7 @@ export default function BarcodeScannerScreen({ navigation }) {
         quality: 0.82,
       });
       if (!result.canceled && result.assets?.length) {
-        setPhoto(result.assets[0]);
+        setFoodPhoto(result.assets[0]);
       }
     } catch (err) {
       setError(err.message || 'Unable to open camera.');
@@ -53,15 +71,15 @@ export default function BarcodeScannerScreen({ navigation }) {
     try {
       setError(null);
       const asset = await pickImageFromLibrary();
-      if (asset) setPhoto(asset);
+      if (asset) setFoodPhoto(asset);
     } catch (err) {
       setError(err.message || 'Unable to choose image.');
     }
   };
 
   const searchSimilar = () => {
-    const query = selectedHint?.query || ''; 
-    navigation.navigate('CustomerHome', { scannedCode: query });
+    const hint = selectedHint || UNKNOWN_FOOD;
+    navigation.navigate('CustomerHome', { scannedCode: hint.query, similarFoodLabel: hint.label });
   };
 
   return (
@@ -105,8 +123,8 @@ export default function BarcodeScannerScreen({ navigation }) {
         ) : null}
 
         <View style={styles.hintsCard}>
-          <Text style={styles.sectionTitle}>What does it look like?</Text>
-          <Text style={styles.sectionText}>Pick the closest match for best results. If you skip this, we will show all restaurants instead of returning no matches.</Text>
+          <Text style={styles.sectionTitle}>Detected food type</Text>
+          <Text style={styles.sectionText}>QuickBite will try to detect the upload. You can adjust it here when needed.</Text>
           <View style={styles.hintGrid}>
             {FOOD_HINTS.map((hint) => {
               const active = selectedHint?.label === hint.label;
@@ -167,3 +185,4 @@ const styles = StyleSheet.create({
   searchBtnDisabled: { backgroundColor: '#FFAB80' },
   searchText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
 });
+

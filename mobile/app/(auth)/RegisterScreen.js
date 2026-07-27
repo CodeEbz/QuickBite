@@ -25,12 +25,14 @@ const ROLES = [
 export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState('CUSTOMER');
   const [restaurantName, setRestaurantName] = useState('');
   const [cuisineType, setCuisineType] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedInput, setFocusedInput] = useState(null); // 'name' | 'email' | 'password' | 'restaurantName' | 'cuisineType'
+  const [focusedInput, setFocusedInput] = useState(null); // 'name' | 'email' | 'phone' | 'password' | 'restaurantName' | 'cuisineType'
+  const [validationError, setValidationError] = useState(null);
 
   const dispatch = useDispatch();
   const { isLoading, error, registerStatus } = useSelector((state) => state.auth);
@@ -83,16 +85,29 @@ export default function RegisterScreen({ navigation }) {
   }, [registerStatus, navigation]);
 
   const handleRegister = () => {
+    const emailPattern = /\S+@\S+\.\S+/;
     if (!name.trim() || !email.trim() || !password.trim()) {
+      setValidationError('Name, email and password are required.');
+      return;
+    }
+    if (!emailPattern.test(email.trim())) {
+      setValidationError('Enter a valid email address.');
+      return;
+    }
+    if (password.length < 6) {
+      setValidationError('Password must be at least 6 characters.');
       return;
     }
     if (selectedRole === 'RESTAURANT' && !restaurantName.trim()) {
+      setValidationError('Restaurant name is required for merchant accounts.');
       return;
     }
+    setValidationError(null);
     dispatch(
       register({
         name: name.trim(),
         email: email.trim(),
+        phone: phone.trim(),
         password,
         role: selectedRole,
         restaurantName: restaurantName.trim(),
@@ -166,10 +181,10 @@ export default function RegisterScreen({ navigation }) {
 
           {/* Form Card */}
           <View style={styles.formCard}>
-            {error && (
+            {(error || validationError) && (
               <View style={styles.errorBox}>
                 <Ionicons name="alert-circle-outline" size={20} color="#D9383A" />
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={styles.errorText}>{validationError || error}</Text>
               </View>
             )}
 
@@ -224,6 +239,31 @@ export default function RegisterScreen({ navigation }) {
               />
             </View>
 
+
+            {/* Phone Input */}
+            <View
+              style={[
+                styles.inputWrapper,
+                focusedInput === 'phone' && styles.inputWrapperFocused,
+              ]}
+            >
+              <Ionicons
+                name="call-outline"
+                size={20}
+                color={focusedInput === 'phone' ? '#FF5C00' : '#8A8A8E'}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number"
+                placeholderTextColor="#8A8A8E"
+                keyboardType="phone-pad"
+                value={phone}
+                onChangeText={setPhone}
+                onFocus={() => setFocusedInput('phone')}
+                onBlur={() => setFocusedInput(null)}
+              />
+            </View>
             {/* Password Input */}
             <View
               style={[
@@ -576,3 +616,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+
+

@@ -12,6 +12,8 @@ function authResponse(user) {
     token: signToken(user),
     role: user.role,
     name: user.name,
+    email: user.email,
+    phone: user.phone || null,
     profileImage: user.profileImage || null
   };
 }
@@ -30,7 +32,7 @@ async function setOtp(userId, email) {
 }
 
 router.post('/register', asyncHandler(async (req, res) => {
-  const { name, email, password, role = 'CUSTOMER' } = req.body || {};
+  const { name, email, password, phone, role = 'CUSTOMER' } = req.body || {};
   if (!name || !email || !password) throw httpError('Name, email and password are required.');
   const normalizedRole = String(role).toUpperCase();
   if (normalizedRole === 'ADMIN') throw httpError('Admin accounts cannot be created from public signup.');
@@ -46,6 +48,7 @@ router.post('/register', asyncHandler(async (req, res) => {
       email,
       password: await bcrypt.hash(password, 10),
       role: normalizedRole,
+      phone: phone ? String(phone).trim() : null,
       verified: config.autoVerifySignups
     }
   });
@@ -77,12 +80,12 @@ router.post('/verify-otp', asyncHandler(async (req, res) => {
 }));
 
 router.post('/register-merchant', asyncHandler(async (req, res) => {
-  const { ownerName, email, password, restaurantName, cuisineType } = req.body || {};
+  const { ownerName, email, password, restaurantName, cuisineType, phone } = req.body || {};
   if (!ownerName || !email || !password || !restaurantName) throw httpError('Owner, email, password and restaurant name are required.');
   if (await prisma.user.findUnique({ where: { email } })) throw httpError('Email already registered.');
 
   const user = await prisma.user.create({
-    data: { name: ownerName, email, password: await bcrypt.hash(password, 10), role: 'RESTAURANT', verified: true }
+    data: { name: ownerName, email, password: await bcrypt.hash(password, 10), role: 'RESTAURANT', phone: phone ? String(phone).trim() : null, verified: true }
   });
   await prisma.restaurant.create({
     data: {
@@ -97,6 +100,30 @@ router.post('/register-merchant', asyncHandler(async (req, res) => {
   return res.json(authResponse(user));
 }));
 
+router.post('/forgot-password', asyncHandler(async (req, res) => {
+  const email = String(req.body?.email || '').trim();
+  if (!email) throw httpError('Email is required.');
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (user) await setOtp(user.id, user.email);
+  return res.json('If that email exists, a reset code has been sent.');
+}));
+
+router.post('/reset-password', asyncHandler(async (req, res) => {
+  const email = String(req.body?.email || '').trim();
+  const otp = String(req.body?.otp || '').trim();
+  const password = String(req.body?.password || '');
+  if (!email || !otp || !password) throw httpError('Email, reset code and new password are required.');
+  if (password.length < 6) throw httpError('Password must be at least 6 characters.');
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw httpError('Invalid reset details.', 400);
+  if (user.otp !== otp) throw httpError('Invalid reset code.');
+  if (!user.otpExpiry || user.otpExpiry < new Date()) throw httpError('Reset code expired.');
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: await bcrypt.hash(password, 10), otp: null, otpExpiry: null, verified: true }
+  });
+  return res.json('Password reset successfully. You can now sign in.');
+}));
 router.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
   const user = await prisma.user.findUnique({ where: { email } });
@@ -106,3 +133,6 @@ router.post('/login', asyncHandler(async (req, res) => {
 }));
 
 module.exports = router;
+
+
+

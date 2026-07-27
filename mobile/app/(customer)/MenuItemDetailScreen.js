@@ -7,12 +7,14 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../../store/slices/cartSlice';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNaira } from '../../lib/format';
 
 export default function MenuItemDetailScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { item, restaurant } = route.params;
   const dispatch = useDispatch();
 
@@ -33,7 +35,7 @@ export default function MenuItemDetailScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 + insets.bottom }]} showsVerticalScrollIndicator={false}>
         <View style={styles.imageWrap}>
           <Image source={{ uri: item.image }} style={styles.image} />
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -44,7 +46,7 @@ export default function MenuItemDetailScreen({ route, navigation }) {
         <View style={styles.content}>
           <Text style={styles.restaurantName}>{restaurant.name}</Text>
           <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.price}>${Number(item.price).toFixed(2)}</Text>
+          <Text style={styles.price}>{formatNaira(Number(item.price))}</Text>
 
           <View style={styles.metaRow}>
             <View style={styles.metaPill}>
@@ -64,10 +66,10 @@ export default function MenuItemDetailScreen({ route, navigation }) {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(18, insets.bottom + 12) }]}>
         <TouchableOpacity onPress={handleAdd} style={styles.addBtn} activeOpacity={0.9}>
           <Text style={styles.addBtnText}>Add to Cart</Text>
-          <Text style={styles.addPrice}>${Number(item.price).toFixed(2)}</Text>
+          <Text style={styles.addPrice}>{formatNaira(Number(item.price))}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -79,9 +81,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAF9F6',
   },
-  scrollContent: {
-    paddingBottom: 110,
-  },
+  scrollContent: {},
   imageWrap: {
     height: 290,
     backgroundColor: '#E9ECEF',
@@ -190,3 +190,5 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 });
+
+

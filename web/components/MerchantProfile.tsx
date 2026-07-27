@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { getAdminToken } from "../lib/authStorage";
@@ -21,6 +21,7 @@ export default function MerchantProfile() {
   const [profile, setProfile] = useState<RestaurantProfile | null>(null);
   const [name, setName] = useState("");
   const [cuisineType, setCuisineType] = useState("");
+  const [ownerName, setOwnerName] = useState("");
   const [image, setImage] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +32,7 @@ export default function MerchantProfile() {
     setProfile(data);
     setName(data.name || "");
     setCuisineType(data.cuisineType || "");
+    setOwnerName(data.ownerName || "");
     setImage(data.image || "");
   }, []);
 
@@ -80,7 +82,7 @@ export default function MerchantProfile() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: name.trim(), cuisineType: cuisineType.trim(), image: nextImage }),
+        body: JSON.stringify({ name: name.trim(), ownerName: ownerName.trim(), cuisineType: cuisineType.trim(), image: nextImage }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || data.message || "Failed to save profile.");
@@ -109,6 +111,10 @@ export default function MerchantProfile() {
         <div className="mt-5 space-y-4">
           <label className="block text-xs font-bold text-zinc-400 uppercase">Restaurant Name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500" />
+
+
+          <label className="block text-xs font-bold text-zinc-400 uppercase">Owner Name</label>
+          <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500" />
 
           <label className="block text-xs font-bold text-zinc-400 uppercase">Cuisine Type</label>
           <input value={cuisineType} onChange={(e) => setCuisineType(e.target.value)} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500" />
@@ -144,7 +150,7 @@ export default function MerchantProfile() {
           </div>
           <div className="rounded-2xl bg-zinc-950 border border-zinc-800 p-4">
             <p className="text-xs text-zinc-500 font-bold uppercase">Rating</p>
-            <p className="mt-2 text-lg font-extrabold text-yellow-400">★ {formatRating(profile?.rating || 0)}</p>
+            <p className="mt-2 text-lg font-extrabold text-yellow-400">Rating {formatRating(profile?.rating || 0)}</p>
           </div>
           <div className="rounded-2xl bg-zinc-950 border border-zinc-800 p-4">
             <p className="text-xs text-zinc-500 font-bold uppercase">Owner</p>
@@ -160,3 +166,6 @@ export default function MerchantProfile() {
     </div>
   );
 }
+
+
+

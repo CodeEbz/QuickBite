@@ -10,18 +10,22 @@ import {
   ActivityIndicator,
   TextInput,
   RefreshControl,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout, updateUserProfile } from '../../store/slices/authSlice';
 import api from '../../lib/api';
 import { pickImageFromLibrary, uploadImage } from '../../lib/imageUpload';
 import { fallbackAddress, getDefaultAddress, saveDefaultAddress } from '../../lib/addressStorage';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNaira } from '../../lib/format';
 
 const CATEGORIES = [
-  { id: 1, name: 'Burgers', icon: 'pizza' },
+  { id: 1, name: 'Burgers', icon: 'fast-food-outline' },
   { id: 2, name: 'Pizza', icon: 'pizza-outline' },
   { id: 3, name: 'Asian', icon: 'leaf-outline' },
   { id: 4, name: 'Desserts', icon: 'ice-cream-outline' },
@@ -38,6 +42,7 @@ const CUSTOMER_TABS = [
 ];
 
 export default function CustomerHomeScreen({ navigation, route }) {
+  const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const cart = useSelector((state) => state.cart);
@@ -53,11 +58,18 @@ export default function CustomerHomeScreen({ navigation, route }) {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState(fallbackAddress);
   const [addressDraft, setAddressDraft] = useState(fallbackAddress);
+  const [profileNameDraft, setProfileNameDraft] = useState(user?.name || '');
+  const [phoneDraft, setPhoneDraft] = useState(user?.phone || '');
+  const [passwordDraft, setPasswordDraft] = useState('');
   const [promoCode, setPromoCode] = useState(null);
+  const [similarFoodLabel, setSimilarFoodLabel] = useState(null);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
+  const introAnim = useRef(new Animated.Value(0)).current;
+  const promoPulse = useRef(new Animated.Value(1)).current;
 
   const fetchRestaurants = async () => {
     try {
@@ -74,6 +86,16 @@ export default function CustomerHomeScreen({ navigation, route }) {
     }
   };
 
+
+  const fetchUnreadChatCount = async () => {
+    try {
+      const response = await api.get('/api/chat/customer');
+      const list = Array.isArray(response.data) ? response.data : [];
+      setChatUnreadCount(list.filter((chat) => chat.senderRole !== 'CUSTOMER').length);
+    } catch (_err) {
+      setChatUnreadCount(0);
+    }
+  };
   const fetchOrders = async () => {
     try {
       const response = await api.get('/api/customer/orders');
@@ -86,6 +108,15 @@ export default function CustomerHomeScreen({ navigation, route }) {
   useEffect(() => {
     fetchRestaurants();
     fetchOrders();
+    fetchUnreadChatCount();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(promoPulse, { toValue: 1.04, duration: 900, useNativeDriver: true }),
+        Animated.timing(promoPulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ])
+    ).start();
+    Animated.timing(introAnim, { toValue: 1, duration: 700, useNativeDriver: true }).start();
 
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -102,30 +133,39 @@ export default function CustomerHomeScreen({ navigation, route }) {
   }, []);
 
   useEffect(() => {
-    getDefaultAddress()
+    getDefaultAddress(user?.email)
       .then((address) => {
         setDeliveryAddress(address);
         setAddressDraft(address);
       })
       .catch(() => {});
-  }, []);
+  }, [user?.email]);
+
+  useEffect(() => {
+    setProfileNameDraft(user?.name || '');
+    setPhoneDraft(user?.phone || '');
+  }, [user?.name, user?.phone]);
 
   useEffect(() => {
     if (route.params?.scannedCode !== undefined) {
       const scannedCode = String(route.params.scannedCode || '');
       setActiveTab('home');
       setSelectedCategory(scannedCode && scannedCode !== 'All' ? scannedCode : 'All');
+      setSimilarFoodLabel(route.params?.similarFoodLabel || scannedCode || null);
       setSearchQuery('');
-      navigation.setParams({ scannedCode: undefined });
+      navigation.setParams({ scannedCode: undefined, similarFoodLabel: undefined });
     }
     if (route.params?.openProfile) {
       setActiveTab('profile');
       navigation.setParams({ openProfile: undefined });
     }
-  }, [route.params?.scannedCode, route.params?.openProfile, navigation]);
+  }, [route.params?.scannedCode, route.params?.similarFoodLabel, route.params?.openProfile, navigation]);
 
   const handleLogout = () => {
-    dispatch(logout());
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => dispatch(logout()) },
+    ]);
   };
 
   const handleProfileImageUpload = async () => {
@@ -146,9 +186,31 @@ export default function CustomerHomeScreen({ navigation, route }) {
     }
   };
 
+
+  const handleSaveProfile = async () => {
+    try {
+      const payload = {
+        name: profileNameDraft.trim(),
+        phone: phoneDraft.trim(),
+      };
+      if (passwordDraft.trim()) payload.password = passwordDraft;
+      const response = await api.put('/api/users/me', payload);
+      const updatedUser = response.data;
+      dispatch(updateUserProfile({ name: updatedUser.name, phone: updatedUser.phone }));
+      await AsyncStorage.multiSet([
+        ['userName', updatedUser.name || ''],
+        ['userPhone', updatedUser.phone || ''],
+      ]);
+      setPasswordDraft('');
+      alert('Profile details saved.');
+    } catch (err) {
+      const message = err.response?.data?.error || err.message || 'Unable to save profile details.';
+      alert(message);
+    }
+  };
   const handleSaveAddress = async () => {
     try {
-      const saved = await saveDefaultAddress(addressDraft);
+      const saved = await saveDefaultAddress(addressDraft, user?.email);
       setDeliveryAddress(saved);
       alert(saved ? 'Delivery address saved.' : 'Delivery address cleared.');
     } catch (err) {
@@ -186,6 +248,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+      <KeyboardAvoidingView style={styles.keyboardWrap} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -213,6 +276,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
                   return;
                 }
                 if (tab.id === 'chat') {
+                  setChatUnreadCount(0);
                   navigation.navigate('Chat');
                   return;
                 }
@@ -233,7 +297,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={
@@ -248,6 +312,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
             <View style={styles.bannerTextContainer}>
               <Text style={styles.welcomeText}>Hey {user?.name || 'Customer'},</Text>
               <Text style={styles.promoText}>Hungry? Get 50% off on your first order with FIRST50.</Text>
+              <Animated.View style={{ transform: [{ scale: promoPulse }] }}>
               <TouchableOpacity
                 style={styles.promoBtn}
                 onPress={async () => {
@@ -258,12 +323,18 @@ export default function CustomerHomeScreen({ navigation, route }) {
               >
                 <Text style={styles.promoBtnText}>{promoCode === 'FIRST50' ? 'FIRST50 Applied' : 'Apply FIRST50'}</Text>
               </TouchableOpacity>
+              </Animated.View>
             </View>
             <View style={styles.bannerIconBg}>
               <Ionicons name="gift" size={54} color="#FFFFFF" />
             </View>
           </View>
 
+
+          <Animated.View style={[styles.infoStrip, { opacity: introAnim, transform: [{ translateY: introAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
+            <Ionicons name="sparkles-outline" size={18} color="#FF5C00" />
+            <Text style={styles.infoStripText}>Browse, order, chat with merchants, and track every delivery from one place.</Text>
+          </Animated.View>
           {/* Search */}
           <View style={styles.searchBar}>
             <Ionicons name="search" size={20} color="#8A8A8E" style={styles.searchIcon} />
@@ -341,11 +412,12 @@ export default function CustomerHomeScreen({ navigation, route }) {
           ) : filteredRestaurants.length === 0 ? (
             <View style={styles.stateCard}>
               <Ionicons name="search-outline" size={28} color="#8A8A8E" />
-              <Text style={styles.emptyText}>No restaurants match your search. Try another category or clear filters.</Text>
+              <Text style={styles.emptyText}>{similarFoodLabel ? `${similarFoodLabel} is not available yet on QuickBite. Try another food type or clear filters.` : 'No restaurants match your search. Try another category or clear filters.'}</Text>
               <TouchableOpacity
                 onPress={() => {
                   setSearchQuery('');
                   setSelectedCategory('All');
+                  setSimilarFoodLabel(null);
                 }}
                 style={styles.retryBtn}
               >
@@ -415,10 +487,10 @@ export default function CustomerHomeScreen({ navigation, route }) {
                     <Text style={styles.orderRestaurant}>{order.restaurant?.name || 'Restaurant'}</Text>
                     <Text style={styles.orderMeta} numberOfLines={1}>
                       {getOrderStatusText(order.status)}
-                      {order.driverName ? ` · Driver: ${order.driverName}` : ''}
+                      {order.driverName ? ` - Driver: ${order.driverName}` : ''}
                     </Text>
                     <View style={styles.orderFooter}>
-                      <Text style={styles.orderTotal}>${Number(order.totalPrice).toFixed(2)}</Text>
+                      <Text style={styles.orderTotal}>{formatNaira(Number(order.totalPrice))}</Text>
                       <View style={styles.trackBtn}>
                         <Text style={styles.trackBtnText}>Track</Text>
                         <Ionicons name="chevron-forward" size={15} color="#FF5C00" />
@@ -465,6 +537,35 @@ export default function CustomerHomeScreen({ navigation, route }) {
                 </TouchableOpacity>
               </View>
 
+
+              <View style={styles.profileActions}>
+                <TextInput
+                  value={profileNameDraft}
+                  onChangeText={setProfileNameDraft}
+                  placeholder="Full name"
+                  placeholderTextColor="#8A8A8E"
+                  style={styles.addressInput}
+                />
+                <TextInput
+                  value={phoneDraft}
+                  onChangeText={setPhoneDraft}
+                  placeholder="Phone number"
+                  placeholderTextColor="#8A8A8E"
+                  keyboardType="phone-pad"
+                  style={styles.addressInput}
+                />
+                <TextInput
+                  value={passwordDraft}
+                  onChangeText={setPasswordDraft}
+                  placeholder="New password (optional)"
+                  placeholderTextColor="#8A8A8E"
+                  secureTextEntry
+                  style={styles.addressInput}
+                />
+                <TouchableOpacity onPress={handleSaveProfile} style={styles.saveAddressBtn}>
+                  <Text style={styles.saveAddressText}>Save Profile</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.profileActions}>
                 <View style={styles.profileActionRow}>
                   <Ionicons name="location-outline" size={20} color="#FF5C00" />
@@ -488,7 +589,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
                   <Ionicons name="card-outline" size={20} color="#FF5C00" />
                   <View style={styles.profileActionText}>
                     <Text style={styles.profileActionTitle}>Payment</Text>
-                    <Text style={styles.profileActionMeta}>Demo card enabled</Text>
+                    <Text style={styles.profileActionMeta}>Secure Paystack checkout enabled</Text>
                   </View>
                 </View>
                 <TouchableOpacity style={styles.logoutWideBtn} onPress={handleLogout}>
@@ -499,6 +600,7 @@ export default function CustomerHomeScreen({ navigation, route }) {
           )}
         </Animated.View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -507,6 +609,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAF9F6',
+  },
+  keyboardWrap: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -562,11 +667,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 5,
+    paddingHorizontal: 2,
   },
   tabBadge: {
     position: 'absolute',
-    top: 3,
-    right: 5,
+    top: -5,
+    right: -2,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -579,6 +685,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '900',
+    fontVariant: ['tabular-nums'],
   },
   tabBtnActive: {
     backgroundColor: '#FF5C00',
@@ -593,7 +700,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
-    paddingBottom: 40,
   },
   welcomeBanner: {
     backgroundColor: '#FF5C00',
@@ -646,6 +752,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  infoStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 18,
+    gap: 9,
+  },
+  infoStripText: {
+    color: '#495057',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+    flex: 1,
   },
   searchBar: {
     flexDirection: 'row',
@@ -1053,3 +1176,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+
+
+
+
+
+
+
+

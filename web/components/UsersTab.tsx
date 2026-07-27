@@ -11,6 +11,7 @@ interface User {
   email: string;
   role: "CUSTOMER" | "DRIVER" | "RESTAURANT" | "ADMIN";
   verified: boolean;
+  phone?: string | null;
   createdAt: string;
 }
 
@@ -109,6 +110,7 @@ export default function UsersTab() {
                 <th className="pb-3 pl-4">ID</th>
                 <th className="pb-3">User Profile</th>
                 <th className="pb-3">Role</th>
+                <th className="pb-3">Phone</th>
                 <th className="pb-3">Joined Date</th>
                 <th className="pb-3">Verified</th>
                 <th className="pb-3 text-right pr-4">Actions</th>
@@ -139,6 +141,7 @@ export default function UsersTab() {
                       {u.role}
                     </span>
                   </td>
+                  <td className="py-4 text-zinc-400">{u.phone || "Not set"}</td>
                   <td className="py-4 text-zinc-400">
                     {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "N/A"}
                   </td>
@@ -179,3 +182,6 @@ export default function UsersTab() {
     </div>
   );
 }
+
+
+

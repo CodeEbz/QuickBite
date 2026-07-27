@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   clearCart,
@@ -15,8 +15,10 @@ import {
   removeFromCart,
 } from '../../store/slices/cartSlice';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNaira } from '../../lib/format';
 
 export default function CartScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart);
 
@@ -46,7 +48,7 @@ export default function CartScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: cart.items.length > 0 ? 130 + insets.bottom : 44 + insets.bottom }]} showsVerticalScrollIndicator={false}>
         {cart.items.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="cart-outline" size={40} color="#8A8A8E" />
@@ -67,7 +69,7 @@ export default function CartScreen({ navigation }) {
               <View key={item.id} style={styles.itemCard}>
                 <View style={styles.itemMain}>
                   <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemPrice}>${Number(item.price).toFixed(2)} each</Text>
+                  <Text style={styles.itemPrice}>{formatNaira(Number(item.price))} each</Text>
                   <TouchableOpacity onPress={() => dispatch(removeFromCart(item.id))} style={styles.removeBtn}>
                     <Text style={styles.removeText}>Remove</Text>
                   </TouchableOpacity>
@@ -87,20 +89,20 @@ export default function CartScreen({ navigation }) {
             <View style={styles.billCard}>
               <View style={styles.billRow}>
                 <Text style={styles.billLabel}>Subtotal</Text>
-                <Text style={styles.billValue}>${subtotal.toFixed(2)}</Text>
+                <Text style={styles.billValue}>{formatNaira(subtotal)}</Text>
               </View>
               <View style={styles.billRow}>
                 <Text style={styles.billLabel}>Delivery</Text>
-                <Text style={styles.billValue}>${deliveryFee.toFixed(2)}</Text>
+                <Text style={styles.billValue}>{formatNaira(deliveryFee)}</Text>
               </View>
               <View style={styles.billRow}>
                 <Text style={styles.billLabel}>Taxes & fees</Text>
-                <Text style={styles.billValue}>${tax.toFixed(2)}</Text>
+                <Text style={styles.billValue}>{formatNaira(tax)}</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.billRow}>
                 <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+                <Text style={styles.totalValue}>{formatNaira(total)}</Text>
               </View>
             </View>
           </>
@@ -108,14 +110,14 @@ export default function CartScreen({ navigation }) {
       </ScrollView>
 
       {cart.items.length > 0 && (
-        <View style={styles.bottomBar}>
+        <View style={[styles.bottomBar, { paddingBottom: Math.max(20, insets.bottom + 12) }]}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Checkout', { restaurant })}
             style={styles.checkoutBtn}
             activeOpacity={0.9}
           >
             <Text style={styles.checkoutText}>Checkout</Text>
-            <Text style={styles.checkoutTotal}>${total.toFixed(2)}</Text>
+            <Text style={styles.checkoutTotal}>{formatNaira(total)}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -145,7 +147,7 @@ const styles = StyleSheet.create({
   },
   disabledBtn: { opacity: 0.4 },
   headerTitle: { fontSize: 18, fontWeight: '900', color: '#1E1E24' },
-  scrollContent: { padding: 20, paddingBottom: 120, gap: 14 },
+  scrollContent: { padding: 20, gap: 14 },
   emptyCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -196,3 +198,5 @@ const styles = StyleSheet.create({
   checkoutText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
   checkoutTotal: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
 });
+
+

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "QuickBite",
+    "slug": "quickbite",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,12 +10,20 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.quickbite.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "icon": "./assets/icon.png"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -43,6 +51,12 @@
       ],
       "expo-secure-store"
     ],
-    "scheme": "quickbite"
+    "scheme": "quickbite",
+    "owner": "neeza",
+    "extra": {
+      "eas": {
+        "projectId": "15517320-71cc-4ee6-9d27-e74dc1adfbea"
+      }
+    }
   }
 }

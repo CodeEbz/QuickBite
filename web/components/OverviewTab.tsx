@@ -58,7 +58,7 @@ export default function OverviewTab() {
   ];
 
   const recentLogs = [
-    { id: 1, type: "order", text: "New order #QB-9204 placed by Sarah Jenkins ($34.20)", time: "2 min ago" },
+    { id: 1, type: "order", text: "New order #QB-9204 placed by Sarah Jenkins (NGN 34.20)", time: "2 min ago" },
     { id: 2, type: "restaurant", text: "Restaurant 'Gourmet Grill' submitted approval request", time: "8 min ago" },
     { id: 3, type: "driver", text: "Driver David Miller changed status to ONLINE", time: "15 min ago" },
     { id: 4, type: "alert", text: "Database CPU utilization reached 78% (autoscaled)", time: "24 min ago" },
@@ -121,7 +121,7 @@ export default function OverviewTab() {
             {weeklySales.map((sale, i) => (
               <div key={i} className="flex flex-col items-center flex-1 group">
                 <div className="absolute mb-24 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-orange-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md pointer-events-none transform -translate-y-2">
-                  ${sale.amount.toLocaleString()}
+                  {formatCurrency(sale.amount)}
                 </div>
                 <div
                   className={`w-10 bg-gradient-to-t from-orange-600 to-amber-500 group-hover:from-orange-500 group-hover:to-yellow-400 rounded-t-lg transition-all duration-500 ease-out cursor-pointer ${sale.height}`}
@@ -174,3 +174,4 @@ export default function OverviewTab() {
     </div>
   );
 }
+

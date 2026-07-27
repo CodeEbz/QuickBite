@@ -1,0 +1,6 @@
+ALTER TABLE "User"
+ADD COLUMN "phone" TEXT;
+
+ALTER TABLE "Order"
+ADD COLUMN "driverPhone" TEXT;
+

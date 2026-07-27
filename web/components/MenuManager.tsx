@@ -230,7 +230,7 @@ export default function MenuManager() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-zinc-400 uppercase">Price ($)</label>
+            <label className="text-xs font-bold text-zinc-400 uppercase">Price (NGN)</label>
             <input
               type="number"
               step="0.01"
@@ -370,3 +370,4 @@ export default function MenuManager() {
     </div>
   );
 }
+

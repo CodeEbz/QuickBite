@@ -9,13 +9,15 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, decrementQuantity, incrementQuantity } from '../../store/slices/cartSlice';
 import api from '../../lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNaira } from '../../lib/format';
 
 export default function RestaurantMenuScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { restaurant } = route.params;
   const [menuItems, setMenuItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,7 +75,7 @@ export default function RestaurantMenuScreen({ route, navigation }) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       {/* Header Image & Info */}
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 108 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={
@@ -138,7 +140,7 @@ export default function RestaurantMenuScreen({ route, navigation }) {
                     <Text style={styles.itemDesc} numberOfLines={2}>
                       {item.description}
                     </Text>
-                    <Text style={styles.itemPrice}>${Number(item.price).toFixed(2)}</Text>
+                    <Text style={styles.itemPrice}>{formatNaira(Number(item.price))}</Text>
                   </View>
 
                   <View style={styles.itemActionContainer}>
@@ -179,7 +181,7 @@ export default function RestaurantMenuScreen({ route, navigation }) {
 
       {/* Floating View Cart Banner */}
       {cart.items.length > 0 && cart.restaurantId === restaurant.id && (
-        <View style={styles.floatingCartContainer}>
+        <View style={[styles.floatingCartContainer, { bottom: Math.max(16, insets.bottom + 12) }]}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Cart')}
             style={styles.floatingCartBtn}
@@ -191,7 +193,7 @@ export default function RestaurantMenuScreen({ route, navigation }) {
               </Text>
             </View>
             <Text style={styles.viewCartText}>View Cart</Text>
-            <Text style={styles.cartTotalText}>${cart.totalPrice.toFixed(2)}</Text>
+            <Text style={styles.cartTotalText}>{formatNaira(cart.totalPrice)}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -204,9 +206,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAF9F6',
   },
-  scrollContent: {
-    paddingBottom: 100,
-  },
+  scrollContent: {},
   headerImageContainer: {
     position: 'relative',
     width: '100%',
@@ -474,3 +474,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 });
+
+

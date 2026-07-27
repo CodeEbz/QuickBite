@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { login, clearErrors } from '../../store/slices/authSlice';
+import api from '../../lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,6 +22,13 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedInput, setFocusedInput] = useState(null); // 'email' | 'password' | null
+  const [validationError, setValidationError] = useState(null);
+  const [resetMode, setResetMode] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetNotice, setResetNotice] = useState(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   const dispatch = useDispatch();
   const { isLoading, error } = useSelector((state) => state.auth);
@@ -59,22 +67,60 @@ export default function LoginScreen({ navigation }) {
     ]).start();
   }, [dispatch]);
 
+  const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value.trim());
+
   const submitLogin = (loginEmail, loginPassword) => {
-    if (!loginEmail.trim() || !loginPassword.trim()) {
+    const trimmedEmail = loginEmail.trim();
+    if (!trimmedEmail || !loginPassword.trim()) {
+      setValidationError('Enter your email and password to continue.');
       return;
     }
-    dispatch(login({ email: loginEmail.trim(), password: loginPassword }));
+    if (!isValidEmail(trimmedEmail)) {
+      setValidationError('Enter a valid email address.');
+      return;
+    }
+    setValidationError(null);
+    dispatch(login({ email: trimmedEmail, password: loginPassword }));
   };
 
   const handleLogin = () => {
     submitLogin(email, password);
   };
 
-  const handleDemoLogin = (loginEmail) => {
-    const demoPassword = 'AdminPassword2026!';
-    setEmail(loginEmail);
-    setPassword(demoPassword);
-    submitLogin(loginEmail, demoPassword);
+  const handleForgotPassword = async () => {
+    const trimmedEmail = resetEmail.trim() || email.trim();
+    if (!isValidEmail(trimmedEmail)) {
+      setValidationError('Enter the email address for your account.');
+      return;
+    }
+
+    setIsResetting(true);
+    setValidationError(null);
+    setResetNotice(null);
+    try {
+      const endpoint = resetOtp.trim() || resetPassword.trim() ? '/api/auth/reset-password' : '/api/auth/forgot-password';
+      const payload = endpoint.endsWith('reset-password')
+        ? { email: trimmedEmail, otp: resetOtp.trim(), password: resetPassword }
+        : { email: trimmedEmail };
+      if (endpoint.endsWith('reset-password') && (!resetOtp.trim() || resetPassword.length < 6)) {
+        setValidationError('Enter the reset code and a new password with at least 6 characters.');
+        return;
+      }
+      const response = await api.post(endpoint, payload);
+      setResetNotice(typeof response.data === 'string' ? response.data : 'Password reset step completed.');
+      if (endpoint.endsWith('reset-password')) {
+        setResetMode(false);
+        setPassword('');
+        setResetOtp('');
+        setResetPassword('');
+      } else {
+        setResetEmail(trimmedEmail);
+      }
+    } catch (err) {
+      setValidationError(err.response?.data?.error || err.message || 'Unable to reset password.');
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const handlePressIn = () => {
@@ -124,10 +170,10 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.formCard}>
             <Text style={styles.formTitle}>Welcome Back</Text>
             
-            {error && (
+            {(error || validationError) && (
               <View style={styles.errorBox}>
                 <Ionicons name="alert-circle-outline" size={20} color="#D9383A" />
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={styles.errorText}>{validationError || error}</Text>
               </View>
             )}
 
@@ -212,43 +258,54 @@ export default function LoginScreen({ navigation }) {
               </TouchableOpacity>
             </TouchableOpacity>
 
-            <Text style={styles.demoLabel}>Demo access</Text>
-            <View style={styles.demoRow}>
-              <TouchableOpacity
-                style={styles.demoBtn}
-                onPress={() => handleDemoLogin('sarah@gmail.com')}
-                disabled={isLoading}
-              >
-                <Text style={styles.demoBtnText}>Sarah</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.demoBtn}
-                onPress={() => handleDemoLogin('david@driver.com')}
-                disabled={isLoading}
-              >
-                <Text style={styles.demoBtnText}>Driver</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.demoBtn}
-                onPress={() => handleDemoLogin('john@burgerpalace.com')}
-                disabled={isLoading}
-              >
-                <Text style={styles.demoBtnText}>Merchant</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.demoBtn}
-                onPress={() => handleDemoLogin('admin@quickbite.com')}
-                disabled={isLoading}
-              >
-                <Text style={styles.demoBtnText}>Admin</Text>
-              </TouchableOpacity>
-            </View>
-
             {/* Forgot Password */}
-            <TouchableOpacity style={styles.forgotBtn}>
-              <Text style={styles.forgotText}>Forgot Password?</Text>
+            <TouchableOpacity style={styles.forgotBtn} onPress={() => { setResetMode(!resetMode); setResetEmail(email); setValidationError(null); setResetNotice(null); }}>
+              <Text style={styles.forgotText}>{resetMode ? 'Back to Sign In' : 'Forgot Password?'}</Text>
             </TouchableOpacity>
 
+
+            {resetNotice && (
+              <View style={styles.noticeBox}>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#0E7C66" />
+                <Text style={styles.noticeText}>{resetNotice}</Text>
+              </View>
+            )}
+
+            {resetMode && (
+              <View style={styles.resetCard}>
+                <TextInput
+                  style={styles.resetInput}
+                  placeholder="Account email"
+                  placeholderTextColor="#8A8A8E"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={resetEmail}
+                  onChangeText={setResetEmail}
+                  editable={!isResetting}
+                />
+                <TextInput
+                  style={styles.resetInput}
+                  placeholder="Reset code"
+                  placeholderTextColor="#8A8A8E"
+                  keyboardType="number-pad"
+                  value={resetOtp}
+                  onChangeText={setResetOtp}
+                  editable={!isResetting}
+                />
+                <TextInput
+                  style={styles.resetInput}
+                  placeholder="New password"
+                  placeholderTextColor="#8A8A8E"
+                  secureTextEntry
+                  value={resetPassword}
+                  onChangeText={setResetPassword}
+                  editable={!isResetting}
+                />
+                <TouchableOpacity onPress={handleForgotPassword} disabled={isResetting} style={styles.resetBtn}>
+                  {isResetting ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.resetBtnText}>{resetOtp || resetPassword ? 'Reset Password' : 'Send Reset Code'}</Text>}
+                </TouchableOpacity>
+              </View>
+            )}
             {/* Submit Button */}
             <TouchableOpacity
               onPress={handleLogin}
@@ -406,34 +463,45 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  demoRow: {
+  noticeBox: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 20,
-  },
-  demoLabel: {
-    color: '#8A8A8E',
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    marginBottom: 10,
-  },
-  demoBtn: {
-    flexGrow: 1,
-    flexBasis: '46%',
-    height: 44,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#FFD3B8',
-    backgroundColor: '#FFF7F2',
-    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#EFFFF9',
+    borderColor: '#C6F3E7',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
   },
-  demoBtnText: {
-    color: '#C94B00',
+  noticeText: {
+    color: '#0E7C66',
+    fontSize: 13,
+    marginLeft: 8,
+    flex: 1,
+  },
+  resetCard: {
+    gap: 10,
+    marginBottom: 18,
+  },
+  resetInput: {
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: '#F8F9FA',
+    color: '#1E1E24',
+    paddingHorizontal: 14,
     fontSize: 14,
-    fontWeight: '700',
+  },
+  resetBtn: {
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: '#0E7C66',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
   },
   submitBtn: {
     backgroundColor: '#FF5C00',
@@ -475,3 +543,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+
+

@@ -1,12 +1,15 @@
-export function toNumber(value: number | string | null | undefined, fallback = 0) {
-  const numeric = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(numeric) ? numeric : fallback;
-}
+export const toNumber = (value: number | string | null | undefined) => {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 
-export function formatCurrency(value: number | string | null | undefined) {
-  return `$${toNumber(value).toFixed(2)}`;
-}
+export const formatCurrency = (value: number | string | null | undefined) => {
+  return `\u20A6${toNumber(value).toLocaleString("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
 
-export function formatRating(value: number | string | null | undefined) {
+export const formatRating = (value: number | string | null | undefined) => {
   return toNumber(value).toFixed(1);
-}
+};

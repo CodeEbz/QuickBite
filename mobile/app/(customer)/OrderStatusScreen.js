@@ -8,19 +8,26 @@ import {
   Animated,
   TextInput,
   ActivityIndicator,
+  Linking,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNaira } from '../../lib/format';
 
 export default function OrderStatusScreen({ route, navigation }) {
-  const { order: initialOrder } = route.params;
+  const insets = useSafeAreaInsets();
+  const { order: initialOrder, receipt: initialReceipt } = route.params;
   const [order, setOrder] = useState(initialOrder);
   const [restaurantRating, setRestaurantRating] = useState(initialOrder.restaurantRating || 5);
   const [driverRating, setDriverRating] = useState(initialOrder.driverRating || 5);
   const [appRating, setAppRating] = useState(initialOrder.appRating || 5);
   const [ratingComment, setRatingComment] = useState(initialOrder.ratingComment || '');
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [receipt, setReceipt] = useState(initialReceipt || null);
 
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -62,6 +69,15 @@ export default function OrderStatusScreen({ route, navigation }) {
     return () => clearInterval(interval);
   }, []);
 
+
+  useEffect(() => {
+    if (receipt || !initialOrder?.id) return;
+    AsyncStorage.getItem(`quickbite_receipt_${initialOrder.id}`)
+      .then((value) => {
+        if (value) setReceipt(JSON.parse(value));
+      })
+      .catch(() => {});
+  }, [initialOrder?.id, receipt]);
   const getStepStatus = (step) => {
     // Steps: 1 (PLACED), 2 (PREPARING), 3 (DELIVERING), 4 (DELIVERED)
     const status = order.status;
@@ -151,13 +167,14 @@ export default function OrderStatusScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+      <KeyboardAvoidingView style={styles.keyboardWrap} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Track Order</Text>
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
@@ -196,6 +213,16 @@ export default function OrderStatusScreen({ route, navigation }) {
                 : 'Waiting for live location'}
             </Text>
           </View>
+          {order.driverPhone ? (
+            <TouchableOpacity
+              onPress={() => Linking.openURL(`tel:${order.driverPhone}`)}
+              style={styles.callDriverBtn}
+              activeOpacity={0.9}
+            >
+              <Ionicons name="call-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.callDriverText}>Call Driver</Text>
+            </TouchableOpacity>
+          ) : null}
           {order.driverLocationUpdatedAt ? (
             <Text style={styles.liveTrackingText}>
               Live tracking updated {new Date(order.driverLocationUpdatedAt).toLocaleTimeString()}
@@ -206,6 +233,34 @@ export default function OrderStatusScreen({ route, navigation }) {
           </Text>
         </View>
 
+
+        {receipt ? (
+          <View style={styles.receiptCard}>
+            <View style={styles.receiptHeader}>
+              <Text style={styles.receiptTitle}>Payment Receipt</Text>
+              <Text style={styles.receiptId}>#QB-{receipt.orderId}</Text>
+            </View>
+            <Text style={styles.receiptMeta}>{receipt.restaurantName}</Text>
+            {(receipt.items || []).map((item, index) => (
+              <View key={`${item.name}-${index}`} style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>{item.quantity}x {item.name}</Text>
+                <Text style={styles.receiptValue}>{formatNaira(Number(item.price) * Number(item.quantity))}</Text>
+              </View>
+            ))}
+            {Number(receipt.discount || 0) > 0 ? (
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptDiscount}>FIRST50 Discount</Text>
+                <Text style={styles.receiptDiscount}>-{formatNaira(receipt.discount)}</Text>
+              </View>
+            ) : null}
+            <View style={styles.receiptDivider} />
+            <View style={styles.receiptRow}>
+              <Text style={styles.receiptTotalLabel}>Paid</Text>
+              <Text style={styles.receiptTotal}>{formatNaira(receipt.total)}</Text>
+            </View>
+            {receipt.paymentReference ? <Text style={styles.receiptReference}>Ref: {receipt.paymentReference}</Text> : null}
+          </View>
+        ) : null}
         {/* Timeline */}
         <View style={styles.timelineCard}>
           {order.status === 'CANCELLED' ? (
@@ -313,6 +368,7 @@ export default function OrderStatusScreen({ route, navigation }) {
           <Ionicons name="home-outline" size={18} color="#FFFFFF" style={{ marginLeft: 6 }} />
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -321,6 +377,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAF9F6',
+  },
+  keyboardWrap: {
+    flex: 1,
   },
   header: {
     justifyContent: 'center',
@@ -338,7 +397,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
-    paddingBottom: 40,
   },
   radarCard: {
     backgroundColor: '#FF5C00',
@@ -404,9 +462,96 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F1F3F5',
   },
+  callDriverBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-end',
+    backgroundColor: '#FF5C00',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    marginTop: 10,
+    gap: 7,
+  },
+  callDriverText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
   liveTrackingText: {
     color: '#2B8A3E',
     fontSize: 12,
+    fontWeight: '800',
+    marginTop: 8,
+  },
+  receiptCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 18,
+  },
+  receiptHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  receiptTitle: {
+    color: '#1E1E24',
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  receiptId: {
+    color: '#FF5C00',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  receiptMeta: {
+    color: '#6C757D',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 5,
+  },
+  receiptLabel: {
+    color: '#495057',
+    fontSize: 13,
+    flex: 1,
+  },
+  receiptValue: {
+    color: '#1E1E24',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  receiptDiscount: {
+    color: '#2B8A3E',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  receiptDivider: {
+    height: 1,
+    backgroundColor: '#F1F3F5',
+    marginVertical: 8,
+  },
+  receiptTotalLabel: {
+    color: '#1E1E24',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  receiptTotal: {
+    color: '#FF5C00',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  receiptReference: {
+    color: '#6C757D',
+    fontSize: 11,
     fontWeight: '800',
     marginTop: 8,
   },
@@ -574,3 +719,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+
+
+

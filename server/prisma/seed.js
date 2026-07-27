@@ -5,16 +5,16 @@ const prisma = new PrismaClient();
 const password = 'AdminPassword2026!';
 
 const users = [
-  ['Sarah Johnson', 'sarah@gmail.com', 'CUSTOMER', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400'],
-  ['Amara Okafor', 'amara@customer.com', 'CUSTOMER', 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400'],
-  ['Tunde Bello', 'tunde@customer.com', 'CUSTOMER', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400'],
-  ['David Miller', 'david@driver.com', 'DRIVER', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400'],
-  ['Aisha Khan', 'aisha@driver.com', 'DRIVER', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400'],
-  ['Noah Williams', 'noah@driver.com', 'DRIVER', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400'],
-  ['Super Admin', 'admin@quickbite.com', 'ADMIN', 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400'],
-  ['John Carter', 'john@burgerpalace.com', 'RESTAURANT', 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400'],
-  ['Marco Romano', 'marco@pizzadiroma.com', 'RESTAURANT', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400'],
-  ['Yuki Tanaka', 'yuki@sushizen.com', 'RESTAURANT', 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=400']
+  ['Sarah Johnson', 'sarah@gmail.com', 'CUSTOMER', '+2348010000101', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400'],
+  ['Amara Okafor', 'amara@customer.com', 'CUSTOMER', '+2348010000102', 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400'],
+  ['Tunde Bello', 'tunde@customer.com', 'CUSTOMER', '+2348010000103', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400'],
+  ['David Miller', 'david@driver.com', 'DRIVER', '+2348020000201', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400'],
+  ['Aisha Khan', 'aisha@driver.com', 'DRIVER', '+2348020000202', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400'],
+  ['Noah Williams', 'noah@driver.com', 'DRIVER', '+2348020000203', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400'],
+  ['Super Admin', 'admin@quickbite.com', 'ADMIN', '+2348030000301', 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400'],
+  ['John Carter', 'john@burgerpalace.com', 'RESTAURANT', '+2348040000401', 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400'],
+  ['Marco Romano', 'marco@pizzadiroma.com', 'RESTAURANT', '+2348040000402', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400'],
+  ['Yuki Tanaka', 'yuki@sushizen.com', 'RESTAURANT', '+2348040000403', 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=400']
 ];
 
 const restaurants = [
@@ -65,11 +65,11 @@ const restaurants = [
 async function main() {
   const hash = await bcrypt.hash(password, 10);
 
-  for (const [name, email, role, profileImage] of users) {
+  for (const [name, email, role, phone, profileImage] of users) {
     await prisma.user.upsert({
       where: { email },
-      update: { name, role, verified: true, profileImage },
-      create: { name, email, role, password: hash, verified: true, profileImage }
+      update: { name, role, phone, verified: true, profileImage },
+      create: { name, email, role, phone, password: hash, verified: true, profileImage }
     });
   }
 
@@ -138,3 +138,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

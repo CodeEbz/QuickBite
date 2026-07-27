@@ -8,9 +8,13 @@ router.use(requireAuth, requireRole('DRIVER'));
 
 const orderInclude = { restaurant: true, items: true };
 
-async function driverName(email) {
+async function driverProfile(email) {
   const user = await prisma.user.findUnique({ where: { email } });
-  return user?.name || email;
+  return { name: user?.name || email, phone: user?.phone || null };
+}
+
+async function driverName(email) {
+  return (await driverProfile(email)).name;
 }
 
 router.get('/orders/available', asyncHandler(async (_req, res) => {
@@ -26,7 +30,8 @@ router.get('/orders/my-active', asyncHandler(async (req, res) => {
   const name = await driverName(req.user.sub);
   const order = await prisma.order.findFirst({
     where: { driverName: { equals: name, mode: 'insensitive' }, status: 'DELIVERING' },
-    include: orderInclude
+    include: orderInclude,
+    orderBy: { createdAt: 'asc' }
   });
   res.json(toJson(order));
 }));
@@ -45,9 +50,10 @@ router.put('/orders/:id/accept', asyncHandler(async (req, res) => {
   const order = await prisma.order.findUnique({ where: { id: Number(req.params.id) } });
   if (!order) throw httpError('Order not found.', 404);
   if (order.driverName) throw httpError('This delivery has already been accepted by another courier.');
+  const driver = await driverProfile(req.user.sub);
   const updated = await prisma.order.update({
     where: { id: order.id },
-    data: { driverName: await driverName(req.user.sub), status: 'DELIVERING' },
+    data: { driverName: driver.name, driverPhone: driver.phone, status: 'DELIVERING' },
     include: orderInclude
   });
   res.json(toJson(updated));
@@ -85,3 +91,5 @@ router.put('/orders/:id/complete', asyncHandler(async (req, res) => {
 }));
 
 module.exports = router;
+
+

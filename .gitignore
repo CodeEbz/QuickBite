@@ -4,6 +4,9 @@ mobile/node_modules/
 web/node_modules/
 
 # Expo
+mobile/.expo-start*.log
+mobile/.expo-start.pid
+mobile/expo-qr.svg
 mobile/.expo/
 mobile/dist/
 mobile/android/
@@ -33,3 +36,5 @@ backend/src/main/resources/application-prod.properties
 # OS
 .DS_Store
 Thumbs.db
+
+

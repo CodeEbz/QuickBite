@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { loadStoredAuth } from '../store/slices/authSlice';
 
 // Import Screens
 import LoginScreen from '../app/(auth)/LoginScreen';
@@ -23,12 +22,7 @@ import AdminHomeScreen from '../app/(admin)/AdminHomeScreen';
 const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
-  const dispatch = useDispatch();
   const { isAuthenticated, role, isLoading } = useSelector((state) => state.auth);
-
-  useEffect(() => {
-    dispatch(loadStoredAuth());
-  }, [dispatch]);
 
   if (isLoading) {
     return (
@@ -85,3 +79,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
   },
 });
+

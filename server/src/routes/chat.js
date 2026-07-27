@@ -85,4 +85,19 @@ router.post('/merchant/customers/:customerEmail', requireAuth, requireRole('REST
   res.json(toJson(message));
 }));
 
+router.delete('/messages/:id', requireAuth, asyncHandler(async (req, res) => {
+  const message = await prisma.chatMessage.findUnique({
+    where: { id: Number(req.params.id) },
+    include: { restaurant: true }
+  });
+  if (!message) throw httpError('Message not found.', 404);
+
+  const isCustomerOwner = req.user.role === 'CUSTOMER' && message.customerEmail === req.user.sub;
+  const isMerchantOwner = req.user.role === 'RESTAURANT' && message.restaurant?.email === req.user.sub;
+  if (!isCustomerOwner && !isMerchantOwner) throw httpError('Access denied.', 403);
+
+  await prisma.chatMessage.delete({ where: { id: message.id } });
+  res.json({ deleted: true, id: message.id });
+}));
 module.exports = router;
+

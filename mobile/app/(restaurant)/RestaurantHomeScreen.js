@@ -10,13 +10,18 @@ import {
   RefreshControl,
   Image,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../../store/slices/authSlice';
+import { logout, updateUserProfile } from '../../store/slices/authSlice';
 import api from '../../lib/api';
 import { pickImageFromLibrary, uploadImage } from '../../lib/imageUpload';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNaira } from '../../lib/format';
 
 const TABS = [
   { id: 'orders', label: 'Orders', icon: 'receipt-outline' },
@@ -28,7 +33,7 @@ const TABS = [
 const getApiErrorMessage = (error, fallback) =>
   error.response?.data?.error || error.response?.data?.message || error.message || fallback;
 
-const formatMoney = (value) => `$${Number(value || 0).toFixed(2)}`;
+const formatMoney = formatNaira;
 
 const orderItemsText = (items) => {
   if (!items || items.length === 0) return 'No items listed';
@@ -36,6 +41,7 @@ const orderItemsText = (items) => {
 };
 
 export default function RestaurantHomeScreen() {
+  const insets = useSafeAreaInsets();
   const [isOpen, setIsOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('orders');
   const [profile, setProfile] = useState(null);
@@ -46,6 +52,7 @@ export default function RestaurantHomeScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: '', ownerName: '', cuisineType: '', phone: '', password: '' });
   const [uploadingMenuItemId, setUploadingMenuItemId] = useState(null);
   const [editingMenuItem, setEditingMenuItem] = useState(null);
   const [menuForm, setMenuForm] = useState({
@@ -66,6 +73,7 @@ export default function RestaurantHomeScreen() {
 
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const introAnim = React.useRef(new Animated.Value(0)).current;
 
   const fetchMerchantData = async () => {
     try {
@@ -77,6 +85,14 @@ export default function RestaurantHomeScreen() {
       ]);
 
       setProfile(profileRes.data);
+      setProfileForm((current) => ({
+        ...current,
+        name: profileRes.data?.name || '',
+        ownerName: profileRes.data?.ownerName || user?.name || '',
+        cuisineType: profileRes.data?.cuisineType || '',
+        phone: user?.phone || '',
+        password: '',
+      }));
       setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
       setMenuItems(Array.isArray(menuRes.data) ? menuRes.data : []);
       fetchMerchantChats();
@@ -90,6 +106,7 @@ export default function RestaurantHomeScreen() {
   };
 
   useEffect(() => {
+    Animated.timing(introAnim, { toValue: 1, duration: 700, useNativeDriver: true }).start();
     fetchMerchantData();
     const interval = setInterval(fetchMerchantData, 8000);
     return () => clearInterval(interval);
@@ -112,9 +129,37 @@ export default function RestaurantHomeScreen() {
   };
 
   const handleLogout = () => {
-    dispatch(logout());
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => dispatch(logout()) },
+    ]);
   };
 
+
+  const saveRestaurantProfile = async () => {
+    try {
+      setError(null);
+      const [restaurantRes, userRes] = await Promise.all([
+        api.put('/api/merchant/profile', {
+          name: profileForm.name.trim(),
+          ownerName: profileForm.ownerName.trim(),
+          cuisineType: profileForm.cuisineType.trim(),
+          image: profile?.image || null,
+        }),
+        api.put('/api/users/me', {
+          name: profileForm.ownerName.trim(),
+          phone: profileForm.phone.trim(),
+          ...(profileForm.password.trim() ? { password: profileForm.password } : {}),
+        }),
+      ]);
+      setProfile(restaurantRes.data);
+      dispatch(updateUserProfile({ name: userRes.data.name, phone: userRes.data.phone }));
+      setProfileForm((current) => ({ ...current, password: '' }));
+      alert('Restaurant profile saved.');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to save restaurant profile.'));
+    }
+  };
   const handleRestaurantImageUpload = async () => {
     setIsUploadingProfileImage(true);
     try {
@@ -288,6 +333,24 @@ export default function RestaurantHomeScreen() {
     }
   };
 
+
+  const deleteChatMessage = (chat) => {
+    Alert.alert('Delete message', 'Delete this chat message?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.delete(`/api/chat/messages/${chat.id}`);
+            setChatMessages((prev) => prev.filter((item) => item.id !== chat.id));
+          } catch (err) {
+            setError(getApiErrorMessage(err, 'Unable to delete message.'));
+          }
+        },
+      },
+    ]);
+  };
   const updateOrderStatus = async (id, newStatus) => {
     setUpdatingOrderId(id);
     try {
@@ -587,6 +650,46 @@ export default function RestaurantHomeScreen() {
         </TouchableOpacity>
         <Text style={styles.profileName}>{profile?.name || 'Restaurant'}</Text>
         <Text style={styles.profileMeta}>{profile?.cuisineType || 'General cuisine'}</Text>
+        <TextInput
+          value={profileForm.name}
+          onChangeText={(value) => setProfileForm((current) => ({ ...current, name: value }))}
+          placeholder="Restaurant name"
+          placeholderTextColor="#8A8A8E"
+          style={styles.menuInput}
+        />
+        <TextInput
+          value={profileForm.ownerName}
+          onChangeText={(value) => setProfileForm((current) => ({ ...current, ownerName: value }))}
+          placeholder="Owner name"
+          placeholderTextColor="#8A8A8E"
+          style={styles.menuInput}
+        />
+        <TextInput
+          value={profileForm.cuisineType}
+          onChangeText={(value) => setProfileForm((current) => ({ ...current, cuisineType: value }))}
+          placeholder="Cuisine type"
+          placeholderTextColor="#8A8A8E"
+          style={styles.menuInput}
+        />
+        <TextInput
+          value={profileForm.phone}
+          onChangeText={(value) => setProfileForm((current) => ({ ...current, phone: value }))}
+          placeholder="Phone number"
+          placeholderTextColor="#8A8A8E"
+          keyboardType="phone-pad"
+          style={styles.menuInput}
+        />
+        <TextInput
+          value={profileForm.password}
+          onChangeText={(value) => setProfileForm((current) => ({ ...current, password: value }))}
+          placeholder="New password (optional)"
+          placeholderTextColor="#8A8A8E"
+          secureTextEntry
+          style={styles.menuInput}
+        />
+        <TouchableOpacity onPress={saveRestaurantProfile} style={styles.menuSaveBtn}>
+          <Text style={styles.menuSaveText}>Save Profile</Text>
+        </TouchableOpacity>
         <View style={styles.profileGrid}>
           <View style={styles.profileMetric}>
             <Text style={styles.profileMetricValue}>{profile?.rating > 0 ? profile.rating.toFixed(1) : 'N/A'}</Text>
@@ -685,6 +788,7 @@ export default function RestaurantHomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+      <KeyboardAvoidingView style={styles.keyboardWrap} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={styles.roleTag}>Merchant Mobile</Text>
@@ -698,13 +802,18 @@ export default function RestaurantHomeScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 42 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#FF5C00" />
         }
       >
+
+        <Animated.View style={[styles.infoStrip, { opacity: introAnim, transform: [{ translateY: introAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
+          <Ionicons name="storefront-outline" size={18} color="#FF5C00" />
+          <Text style={styles.infoStripText}>Manage orders, update your menu, reply to customers, and keep your restaurant profile current.</Text>
+        </Animated.View>
         <View style={styles.heroCard}>
           <View style={styles.statusRow}>
             <View>
@@ -778,11 +887,15 @@ export default function RestaurantHomeScreen() {
           </>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardWrap: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: '#F7F8FA',
@@ -823,7 +936,23 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 18,
-    paddingBottom: 42,
+  },
+  infoStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+    gap: 9,
+  },
+  infoStripText: {
+    color: '#495057',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+    flex: 1,
   },
   heroCard: {
     backgroundColor: '#FFFFFF',
@@ -1508,3 +1637,9 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 });
+
+
+
+
+
+

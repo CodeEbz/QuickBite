@@ -9,7 +9,7 @@ import {
   Linking,
   AppState,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCart } from '../../store/slices/cartSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,8 +17,10 @@ import api from '../../lib/api';
 import * as ExpoLinking from 'expo-linking';
 import { getDefaultAddress } from '../../lib/addressStorage';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNaira } from '../../lib/format';
 
 export default function CheckoutScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { restaurant } = route.params;
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart);
@@ -58,6 +60,19 @@ export default function CheckoutScreen({ route, navigation }) {
     callbackUrl: ExpoLinking.createURL('payment'),
   });
 
+
+  const buildReceiptPayload = (order) => ({
+    orderId: order.id,
+    restaurantName: order.restaurant?.name || restaurant.name,
+    items: cart.items.map((item) => ({ name: item.name, quantity: item.quantity, price: item.price })),
+    subtotal,
+    discount,
+    deliveryFee,
+    tax,
+    total,
+    paymentReference: order.paymentReference || payment?.reference || null,
+    paidAt: new Date().toISOString(),
+  });
   const verifyPayment = async (silent = false) => {
     if (!payment?.reference || isVerifying) {
       if (!silent) alert('Start Paystack checkout before verifying payment.');
@@ -71,11 +86,13 @@ export default function CheckoutScreen({ route, navigation }) {
         order: buildOrderPayload(),
       });
 
+      const receipt = buildReceiptPayload(response.data);
+      await AsyncStorage.setItem(`quickbite_receipt_${response.data.id}`, JSON.stringify(receipt));
       dispatch(clearCart());
       setPayment(null);
       setPaymentBrowserOpened(false);
       await AsyncStorage.removeItem('quickbite_promo_code');
-      navigation.navigate('OrderStatus', { order: response.data });
+      navigation.navigate('OrderStatus', { order: response.data, receipt });
     } catch (err) {
       if (!silent) {
         const message = err.response?.data?.error || err.message || 'Payment is not verified yet. Please complete checkout and try again.';
@@ -147,7 +164,7 @@ export default function CheckoutScreen({ route, navigation }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 160 + insets.bottom }]} showsVerticalScrollIndicator={false}>
         {/* Restaurant Summary */}
         <View style={styles.sectionCard}>
           <Text style={styles.restaurantLabel}>Ordering From</Text>
@@ -177,7 +194,7 @@ export default function CheckoutScreen({ route, navigation }) {
               <View key={item.id} style={styles.itemRow}>
                 <Text style={styles.itemQty}>{item.quantity}x</Text>
                 <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.itemPrice}>${(item.price * item.quantity).toFixed(2)}</Text>
+                <Text style={styles.itemPrice}>{formatNaira(item.price * item.quantity)}</Text>
               </View>
             ))}
           </View>
@@ -189,12 +206,12 @@ export default function CheckoutScreen({ route, navigation }) {
           <View style={styles.billDetails}>
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>Item Subtotal</Text>
-              <Text style={styles.billValue}>${subtotal.toFixed(2)}</Text>
+              <Text style={styles.billValue}>{formatNaira(subtotal)}</Text>
             </View>
             {discount > 0 ? (
               <View style={styles.billRow}>
                 <Text style={styles.discountLabel}>FIRST50 Discount</Text>
-                <Text style={styles.discountValue}>-${discount.toFixed(2)}</Text>
+                <Text style={styles.discountValue}>-{formatNaira(discount)}</Text>
               </View>
             ) : null}
             {promoCode === 'FIRST50' && !isFirstOrder ? (
@@ -202,16 +219,16 @@ export default function CheckoutScreen({ route, navigation }) {
             ) : null}
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>Delivery Fee</Text>
-              <Text style={styles.billValue}>${deliveryFee.toFixed(2)}</Text>
+              <Text style={styles.billValue}>{formatNaira(deliveryFee)}</Text>
             </View>
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>Taxes & Fees</Text>
-              <Text style={styles.billValue}>${tax.toFixed(2)}</Text>
+              <Text style={styles.billValue}>{formatNaira(tax)}</Text>
             </View>
             <View style={styles.divider} />
             <View style={[styles.billRow, { marginTop: 10 }]}>
               <Text style={styles.totalLabel}>Total Payout</Text>
-              <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+              <Text style={styles.totalValue}>{formatNaira(total)}</Text>
             </View>
           </View>
         </View>
@@ -233,7 +250,7 @@ export default function CheckoutScreen({ route, navigation }) {
       </ScrollView>
 
       {/* Pay & Place Order Button */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(24, insets.bottom + 12) }]}>
         <TouchableOpacity
           onPress={handleStartPayment}
           disabled={isLoading || isVerifying || cart.items.length === 0}
@@ -297,7 +314,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
-    paddingBottom: 160,
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
@@ -519,3 +535,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+
+
+

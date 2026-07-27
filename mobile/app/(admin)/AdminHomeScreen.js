@@ -7,12 +7,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import api from '../../lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import { formatNaira } from '../../lib/format';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: 'grid-outline' },
@@ -24,7 +26,7 @@ const TABS = [
 const getApiErrorMessage = (error, fallback) =>
   error.response?.data?.error || error.response?.data?.message || error.message || fallback;
 
-const formatMoney = (value) => `$${Number(value || 0).toFixed(2)}`;
+const formatMoney = formatNaira;
 
 const orderItemsText = (items) => {
   if (!items || items.length === 0) return 'No items listed';
@@ -113,7 +115,10 @@ export default function AdminHomeScreen() {
   }, [orders, restaurants, stats, users]);
 
   const handleLogout = () => {
-    dispatch(logout());
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => dispatch(logout()) },
+    ]);
   };
 
   const handleRefresh = () => {
@@ -920,3 +925,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+
+
+
