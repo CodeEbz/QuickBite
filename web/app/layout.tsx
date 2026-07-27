@@ -4,6 +4,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "QuickBite Admin",
   description: "QuickBite admin and merchant management portal",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
