@@ -71,7 +71,7 @@ export default function RestaurantsTab() {
   });
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl animate-fade-in">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-xl animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
         <div>
           <h3 className="text-lg font-bold text-white">Restaurant Partners</h3>
@@ -79,7 +79,7 @@ export default function RestaurantsTab() {
         </div>
         
         {/* Filter Tabs */}
-        <div className="flex space-x-2 bg-zinc-800/80 p-1 rounded-xl self-start sm:self-auto">
+        <div className="flex w-full flex-wrap gap-1.5 bg-zinc-800/80 p-1 rounded-xl sm:w-auto sm:self-auto">
           {["ALL", "ACTIVE", "PENDING"].map((t) => (
             <button
               key={t}
@@ -96,7 +96,7 @@ export default function RestaurantsTab() {
         </div>
       </div>
 
-      {error && <p className="text-red-400 text-sm mb-4">⚠️ {error}</p>}
+      {error && <p className="text-red-400 text-sm mb-4">! {error}</p>}
 
       {isLoading ? (
         <div className="py-20 flex justify-center">
@@ -107,8 +107,8 @@ export default function RestaurantsTab() {
           No restaurants found.
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <table className="w-full min-w-[760px] text-left border-collapse">
             <thead>
               <tr className="border-b border-zinc-800 text-xs font-bold text-zinc-400 uppercase tracking-wider">
                 <th className="pb-3 pl-4">Restaurant</th>
@@ -142,7 +142,7 @@ export default function RestaurantsTab() {
                   </td>
                   <td className="py-4">
                     <span className="inline-flex items-center text-zinc-300 font-semibold">
-                      <span className="text-yellow-400 mr-1">★</span> {toNumber(res.rating) > 0 ? formatRating(res.rating) : "N/A"}
+                      <span className="text-yellow-400 mr-1">*</span> {toNumber(res.rating) > 0 ? formatRating(res.rating) : "N/A"}
                     </span>
                   </td>
                   <td className="py-4">

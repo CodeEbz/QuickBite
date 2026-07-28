@@ -75,8 +75,8 @@ export default function KitchenQueue() {
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl animate-fade-in shadow-xl">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-zinc-900 border border-zinc-800 p-4 sm:p-6 rounded-2xl animate-fade-in shadow-xl">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h3 className="text-lg font-bold text-white">Active Kitchen Queue</h3>
           <p className="text-xs text-zinc-400 mt-1">Incoming live orders. Queue updates automatically.</p>
@@ -85,11 +85,11 @@ export default function KitchenQueue() {
           onClick={fetchOrders}
           className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all text-xs font-semibold cursor-pointer"
         >
-          🔄 Refresh
+          Refresh
         </button>
       </div>
 
-      {error && <p className="text-red-400 text-sm mb-4">⚠️ {error}</p>}
+      {error && <p className="text-red-400 text-sm mb-4">! {error}</p>}
 
       {isLoading && orders.length === 0 ? (
         <div className="py-20 flex justify-center">
@@ -104,10 +104,10 @@ export default function KitchenQueue() {
           {orders.map((order) => (
             <div
               key={order.id}
-              className="p-5 bg-zinc-950 border border-zinc-850 rounded-xl flex flex-col md:flex-row justify-between md:items-center gap-4"
+              className="p-4 sm:p-5 bg-zinc-950 border border-zinc-850 rounded-xl flex flex-col md:flex-row justify-between md:items-center gap-4"
             >
-              <div className="space-y-2">
-                <div className="flex items-center space-x-3">
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <span className="font-bold text-orange-400">#QB-{order.id}</span>
                   <span className="text-xs text-zinc-500">
                     {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -131,14 +131,14 @@ export default function KitchenQueue() {
 
                 <div className="text-sm">
                   <p className="text-white font-bold mb-1">{order.customerName}</p>
-                  <p className="text-zinc-400 text-xs">
+                  <p className="break-words text-zinc-400 text-xs">
                     {order.items.map((i) => `${i.quantity}x ${i.itemName}`).join(", ")}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between md:justify-end gap-6 border-t border-zinc-900 md:border-t-0 pt-3 md:pt-0">
-                <div className="text-right">
+              <div className="flex flex-col items-stretch gap-3 border-t border-zinc-900 pt-3 sm:flex-row sm:items-center sm:justify-between md:justify-end md:border-t-0 md:pt-0">
+                <div className="text-left sm:text-right">
                   <span className="text-xs text-zinc-500 block">Order Total</span>
                   <span className="font-extrabold text-white">{formatCurrency(order.totalPrice)}</span>
                 </div>
@@ -146,7 +146,7 @@ export default function KitchenQueue() {
                 {order.status === "PENDING" && (
                   <button
                     onClick={() => handleUpdateStatus(order.id, "PREPARING")}
-                    className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer"
+                    className="w-full px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer sm:w-auto"
                   >
                     Accept & Prepare
                   </button>
@@ -155,7 +155,7 @@ export default function KitchenQueue() {
                 {order.status === "PREPARING" && (
                   <button
                     onClick={() => handleUpdateStatus(order.id, "READY")}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer"
+                    className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer sm:w-auto"
                   >
                     Mark as Ready
                   </button>

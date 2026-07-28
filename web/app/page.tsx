@@ -256,9 +256,9 @@ export default function Home() {
             </p>
             <div className="flex items-center space-x-4 pt-4 border-t border-zinc-800">
               <div className="flex -space-x-2">
-                <span className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-xs">🚴</span>
-                <span className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-xs">🍔</span>
-                <span className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-xs">🏪</span>
+                <span className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-xs">QB</span>
+                <span className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-xs">QB</span>
+                <span className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-xs">QB</span>
               </div>
               <span className="text-xs text-zinc-500 font-semibold">Powering a three-sided marketplace</span>
             </div>
@@ -303,7 +303,7 @@ export default function Home() {
 
             {error && (
               <div className="p-4 bg-red-950/40 border border-red-500/25 rounded-2xl flex items-center space-x-3 text-red-400 text-sm">
-                <span>⚠️</span>
+                <span>!</span>
                 <span>{error}</span>
               </div>
             )}
@@ -329,7 +329,7 @@ export default function Home() {
                     <input
                       type={showPassword ? "text" : "password"}
                       required
-                      placeholder="••••••••"
+                      placeholder="********"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full h-12 pl-4 pr-12 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-all text-sm"
@@ -340,7 +340,7 @@ export default function Home() {
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 focus:outline-none text-md select-none"
                       title={showPassword ? "Hide password" : "Show password"}
                     >
-                      {showPassword ? "🙈" : "👁️"}
+                      {showPassword ? "Hide" : "Show"}
                     </button>
                   </div>
                 </div>
@@ -384,7 +384,7 @@ export default function Home() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Cuisine Type</label>
                     <select
@@ -418,7 +418,7 @@ export default function Home() {
                   <input
                     type={showPassword ? "text" : "password"}
                     required
-                    placeholder="••••••••"
+                    placeholder="********"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full h-11 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-all text-sm"
@@ -445,7 +445,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950 font-sans text-zinc-100 antialiased overflow-hidden">
+    <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100 antialiased md:h-screen md:overflow-hidden">
       {/* Sidebar navigation */}
       <aside className="w-64 bg-zinc-900 border-r border-zinc-850 flex flex-col justify-between hidden md:flex">
         <div className="p-6 space-y-8">
@@ -467,11 +467,11 @@ export default function Home() {
               // Admin links
               <>
                 {[
-                  { id: "overview", label: "Dashboard", icon: "📊" },
-                  { id: "restaurants", label: "Restaurants", icon: "🏪" },
-                  { id: "orders", label: "Live Orders", icon: "🛒" },
-                  { id: "users", label: "Users Directory", icon: "👤" },
-                  { id: "reports", label: "Analytics", icon: "📈" },
+                  { id: "overview", label: "Dashboard", icon: "DB" },
+                  { id: "restaurants", label: "Restaurants", icon: "RS" },
+                  { id: "orders", label: "Live Orders", icon: "OR" },
+                  { id: "users", label: "Users Directory", icon: "US" },
+                  { id: "reports", label: "Analytics", icon: "AN" },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -491,8 +491,8 @@ export default function Home() {
               // Merchant links
               <>
                 {[
-                  { id: "kitchen", label: "Kitchen Queue", icon: "🍳" },
-                  { id: "menu", label: "Menu Manager", icon: "📖" },
+                  { id: "kitchen", label: "Kitchen Queue", icon: "KQ" },
+                  { id: "menu", label: "Menu Manager", icon: "MN" },
                   { id: "chat", label: "Customer Chat", icon: "\uD83D\uDCAC" },
                   { id: "profile", label: "Profile", icon: "\uD83C\uDFEA" },
                 ].map((tab) => (
@@ -516,7 +516,7 @@ export default function Home() {
               onClick={handleLogout}
               className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-950/20 transition-all mt-6 border border-red-900/30 cursor-pointer"
             >
-              <span>🚪</span>
+              <span>!</span>
               <span>Logout Account</span>
             </button>
           </nav>
@@ -537,26 +537,26 @@ export default function Home() {
       </aside>
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
-        <header className="h-16 bg-zinc-900 border-b border-zinc-850 flex items-center justify-between px-6 md:hidden">
+        <header className="min-h-16 bg-zinc-900 border-b border-zinc-850 flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:hidden">
           <button
             onClick={() => setActiveTab(userRole === "RESTAURANT" ? "kitchen" : "overview")}
-            className="flex items-center space-x-2 text-left focus:outline-none cursor-pointer"
+            className="min-w-0 flex items-center space-x-2 text-left focus:outline-none cursor-pointer"
           >
             <div className="w-7 h-7 rounded-lg bg-orange-600 flex items-center justify-center font-bold text-white text-xs">
               QB
             </div>
-            <span className="font-extrabold text-sm text-white">
+            <span className="min-w-0 truncate font-extrabold text-sm text-white">
               {userRole === "RESTAURANT" && restaurantName ? restaurantName : "QuickBite"}
             </span>
           </button>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
             <select
               value={activeTab}
               onChange={(e) => setActiveTab(e.target.value)}
-              className="bg-zinc-800 border border-zinc-700 text-xs font-bold rounded-lg px-2 py-1 text-white focus:outline-none cursor-pointer"
+              className="min-w-0 max-w-[150px] bg-zinc-800 border border-zinc-700 text-xs font-bold rounded-lg px-2 py-1 text-white focus:outline-none cursor-pointer"
             >
               {userRole === "ADMIN" ? (
                 <>
@@ -585,18 +585,18 @@ export default function Home() {
         </header>
 
         {/* Content Wrapper */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-10 bg-zinc-950">
-          <div className="max-w-6xl mx-auto space-y-8">
-            <div className="flex justify-between items-center border-b border-zinc-900 pb-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-10 bg-zinc-950">
+          <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-b border-zinc-900 pb-5 md:pb-6">
               <div>
-                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white capitalize leading-none">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white capitalize leading-tight break-words">
                   {userRole === "RESTAURANT" && activeTab === "kitchen" && restaurantName 
                     ? `${restaurantName} Kitchen` 
                     : activeTab === "overview" 
                     ? "System Dashboard" 
                     : activeTab}
                 </h1>
-                <p className="text-xs text-zinc-500 mt-2">
+                <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
                   {userRole === "ADMIN" 
                     ? "Platform administration control node and configuration interface"
                     : "Merchant dashboard portal for managing menus, chats, profile, and dispatching orders"}

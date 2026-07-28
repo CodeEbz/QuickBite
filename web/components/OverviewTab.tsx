@@ -51,10 +51,10 @@ export default function OverviewTab() {
   }, []);
 
   const statsList = [
-    { label: "Total Revenue", value: formatCurrency(stats.totalRevenue), change: "Live sales", icon: "💰", color: "text-emerald-500" },
-    { label: "Active Orders", value: toNumber(stats.totalOrders).toString(), change: "Cumulative orders", icon: "🛒", color: "text-orange-500" },
-    { label: "Active Drivers", value: toNumber(stats.activeDrivers).toString(), change: "Ready for courier dispatch", icon: "🚴", color: "text-blue-500" },
-    { label: "Pending Approvals", value: toNumber(stats.pendingApprovals).toString(), change: "Merchant applications", icon: "⏳", color: "text-amber-500" },
+    { label: "Total Revenue", value: formatCurrency(stats.totalRevenue), change: "Live sales", icon: "$", color: "text-emerald-500" },
+    { label: "Active Orders", value: toNumber(stats.totalOrders).toString(), change: "Cumulative orders", icon: "OR", color: "text-orange-500" },
+    { label: "Active Drivers", value: toNumber(stats.activeDrivers).toString(), change: "Ready for courier dispatch", icon: "DR", color: "text-blue-500" },
+    { label: "Pending Approvals", value: toNumber(stats.pendingApprovals).toString(), change: "Merchant applications", icon: "!", color: "text-amber-500" },
   ];
 
   const recentLogs = [
@@ -87,16 +87,16 @@ export default function OverviewTab() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
         {statsList.map((stat, i) => (
           <div
             key={i}
-            className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-orange-500/50"
+            className="p-4 sm:p-6 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-orange-500/50"
           >
-            <div className="flex justify-between items-start">
+            <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-zinc-400">{stat.label}</p>
-                <h3 className="text-2xl font-bold text-white mt-2">{stat.value}</h3>
+                <h3 className="break-words text-xl font-bold text-white mt-2 sm:text-2xl">{stat.value}</h3>
               </div>
               <span className="text-2xl p-2 bg-zinc-800/80 rounded-xl">{stat.icon}</span>
             </div>
@@ -109,15 +109,15 @@ export default function OverviewTab() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         {/* Weekly Revenue Chart */}
-        <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl lg:col-span-2">
-          <div className="flex justify-between items-center mb-6">
+        <div className="p-4 sm:p-6 bg-zinc-900 border border-zinc-800 rounded-2xl lg:col-span-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
             <h3 className="text-lg font-bold text-white">Weekly Platform Performance</h3>
             <span className="text-xs px-3 py-1 bg-zinc-800 text-zinc-400 rounded-full font-medium">Last 7 Days</span>
           </div>
 
-          <div className="flex items-end justify-between h-64 pt-6 px-4 border-b border-zinc-800">
+          <div className="flex items-end justify-between gap-2 overflow-x-auto h-56 sm:h-64 pt-6 px-1 sm:px-4 border-b border-zinc-800">
             {weeklySales.map((sale, i) => (
               <div key={i} className="flex flex-col items-center flex-1 group">
                 <div className="absolute mb-24 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-orange-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md pointer-events-none transform -translate-y-2">
@@ -133,9 +133,9 @@ export default function OverviewTab() {
         </div>
 
         {/* Live system logs */}
-        <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl flex flex-col justify-between">
+        <div className="p-4 sm:p-6 bg-zinc-900 border border-zinc-800 rounded-2xl flex flex-col justify-between">
           <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
               <h3 className="text-lg font-bold text-white">System Events Log</h3>
               <div className="flex items-center">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping mr-2" />
@@ -157,8 +157,8 @@ export default function OverviewTab() {
                         : "bg-red-500"
                     }`}
                   />
-                  <div className="flex-1">
-                    <p className="text-zinc-300 leading-tight">{log.text}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words text-zinc-300 leading-tight">{log.text}</p>
                     <span className="text-[10px] text-zinc-500 mt-1 block">{log.time}</span>
                   </div>
                 </div>
@@ -174,4 +174,3 @@ export default function OverviewTab() {
     </div>
   );
 }
-

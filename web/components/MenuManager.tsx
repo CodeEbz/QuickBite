@@ -201,10 +201,10 @@ export default function MenuManager() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 animate-fade-in">
       {/* Menu Form */}
-      <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl h-fit shadow-xl">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-zinc-900 border border-zinc-800 p-4 sm:p-6 rounded-2xl h-fit shadow-xl">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <h3 className="text-lg font-bold text-white">Add Menu Item</h3>
           <button
             type="button"
@@ -316,10 +316,10 @@ export default function MenuManager() {
       </div>
 
       {/* Menu List */}
-      <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl lg:col-span-2 shadow-xl">
+      <div className="bg-zinc-900 border border-zinc-800 p-4 sm:p-6 rounded-2xl lg:col-span-2 shadow-xl">
         <h3 className="text-lg font-bold text-white mb-6">Active Menu Catalog</h3>
 
-        {error && <p className="text-red-400 text-sm mb-4">⚠️ {error}</p>}
+        {error && <p className="text-red-400 text-sm mb-4">! {error}</p>}
 
         {isLoading ? (
           <div className="py-20 flex justify-center">
@@ -333,7 +333,7 @@ export default function MenuManager() {
               disabled={isSubmitting}
               className="px-4 py-2 bg-orange-600/20 hover:bg-orange-600/30 border border-orange-500/40 text-orange-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
             >
-              🍔 Populate 3 Sample Dishes
+              Populate 3 Sample Dishes
             </button>
           </div>
         ) : (
@@ -341,26 +341,26 @@ export default function MenuManager() {
             {menu.map((item) => (
               <div
                 key={item.id}
-                className="p-4 bg-zinc-950 border border-zinc-850 rounded-xl flex items-center justify-between group hover:border-zinc-700 transition-all"
+                className="p-4 bg-zinc-950 border border-zinc-850 rounded-xl flex items-center justify-between gap-3 group hover:border-zinc-700 transition-all"
               >
-                <div className="flex items-center space-x-3">
+                <div className="min-w-0 flex items-center space-x-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-12 h-12 rounded-lg object-cover border border-zinc-800 bg-zinc-800"
+                    className="h-12 w-12 flex-none rounded-lg object-cover border border-zinc-800 bg-zinc-800"
                   />
-                  <div>
-                    <h4 className="font-bold text-white text-sm leading-snug">{item.name}</h4>
-                    <p className="text-xs text-zinc-500 mt-0.5">{formatCurrency(item.price)} • {item.category}</p>
+                  <div className="min-w-0">
+                    <h4 className="truncate font-bold text-white text-sm leading-snug">{item.name}</h4>
+                    <p className="truncate text-xs text-zinc-500 mt-0.5">{formatCurrency(item.price)} - {item.category}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => handleDeleteItem(item.id)}
-                  className="p-2 bg-red-950/20 hover:bg-red-500/10 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  className="flex-none p-2 bg-red-950/20 hover:bg-red-500/10 text-red-500 rounded-xl md:opacity-0 md:group-hover:opacity-100 transition-opacity cursor-pointer"
                   title="Delete item"
                 >
-                  🗑️
+                  Delete
                 </button>
               </div>
             ))}
@@ -370,4 +370,3 @@ export default function MenuManager() {
     </div>
   );
 }
-

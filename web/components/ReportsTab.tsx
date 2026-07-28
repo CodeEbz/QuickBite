@@ -120,21 +120,21 @@ export default function ReportsTab() {
     <div className="space-y-6 animate-fade-in">
       {error && <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-4 text-sm text-red-300">{error}</div>}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
         {reportMetrics.map((metric) => (
-          <div key={metric.label} className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-zinc-400 text-sm font-semibold">{metric.label}</span>
+          <div key={metric.label} className="p-4 sm:p-6 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <span className="min-w-0 break-words text-zinc-400 text-sm font-semibold">{metric.label}</span>
               <span className="text-xl">{metric.icon}</span>
             </div>
-            <h3 className="text-2xl font-bold text-white">{metric.value}</h3>
+            <h3 className="break-words text-xl font-bold text-white sm:text-2xl">{metric.value}</h3>
             <p className="text-xs text-zinc-500 mt-2">{metric.desc}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl lg:col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+        <div className="p-4 sm:p-6 bg-zinc-900 border border-zinc-800 rounded-2xl lg:col-span-2">
           <h3 className="text-lg font-bold text-white mb-2">Restaurant Cuisine Mix</h3>
           <p className="text-xs text-zinc-500 mb-6">Derived from merchant records in the admin database.</p>
 
@@ -157,28 +157,28 @@ export default function ReportsTab() {
           )}
         </div>
 
-        <div className="p-6 bg-zinc-900 border border-zinc-850 rounded-2xl border-l-4 border-l-orange-600 flex flex-col justify-between">
+        <div className="p-4 sm:p-6 bg-zinc-900 border border-zinc-850 rounded-2xl border-l-4 border-l-orange-600 flex flex-col justify-between">
           <div className="space-y-4">
             <h4 className="text-md font-bold text-white">Platform Snapshot</h4>
             <p className="text-xs text-zinc-400 leading-relaxed">
               These figures now use live admin data. Commission remains an estimate until a payout ledger is added to the backend.
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="p-3 bg-zinc-850/60 rounded-xl border border-zinc-800">
                 <span className="text-xs text-zinc-500 block">Restaurants</span>
-                <span className="text-sm font-bold text-white mt-1 block">{toNumber(stats.totalRestaurants)}</span>
+                <span className="break-words text-sm font-bold text-white mt-1 block">{toNumber(stats.totalRestaurants)}</span>
               </div>
               <div className="p-3 bg-zinc-850/60 rounded-xl border border-zinc-800">
                 <span className="text-xs text-zinc-500 block">Drivers</span>
-                <span className="text-sm font-bold text-white mt-1 block">{toNumber(stats.activeDrivers)}</span>
+                <span className="break-words text-sm font-bold text-white mt-1 block">{toNumber(stats.activeDrivers)}</span>
               </div>
               <div className="p-3 bg-zinc-850/60 rounded-xl border border-zinc-800">
                 <span className="text-xs text-zinc-500 block">Pending</span>
-                <span className="text-sm font-bold text-white mt-1 block">{toNumber(stats.pendingApprovals)}</span>
+                <span className="break-words text-sm font-bold text-white mt-1 block">{toNumber(stats.pendingApprovals)}</span>
               </div>
               <div className="p-3 bg-zinc-850/60 rounded-xl border border-zinc-800">
                 <span className="text-xs text-zinc-500 block">Orders</span>
-                <span className="text-sm font-bold text-white mt-1 block">{toNumber(stats.totalOrders)}</span>
+                <span className="break-words text-sm font-bold text-white mt-1 block">{toNumber(stats.totalOrders)}</span>
               </div>
             </div>
           </div>

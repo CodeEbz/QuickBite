@@ -101,8 +101,8 @@ export default function MerchantProfile() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 animate-fade-in">
-      <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl h-fit">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)] animate-fade-in">
+      <section className="min-w-0 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-xl h-fit">
         <h3 className="text-lg font-bold text-white">Restaurant Profile</h3>
         <p className="text-xs text-zinc-500 mt-1">Matches the mobile merchant profile controls.</p>
 
@@ -133,39 +133,36 @@ export default function MerchantProfile() {
         </div>
       </section>
 
-      <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+      <section className="min-w-0 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-xl">
         <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
           {image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={image} alt={name || "Restaurant"} className="h-72 w-full object-cover" />
+            <img src={image} alt={name || "Restaurant"} className="h-56 w-full object-cover sm:h-72" />
           ) : (
-            <div className="h-72 flex items-center justify-center text-zinc-600">No restaurant image</div>
+            <div className="h-56 flex items-center justify-center text-zinc-600 sm:h-72">No restaurant image</div>
           )}
         </div>
 
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <div className="rounded-2xl bg-zinc-950 border border-zinc-800 p-4">
             <p className="text-xs text-zinc-500 font-bold uppercase">Status</p>
-            <p className="mt-2 text-lg font-extrabold text-emerald-400">{profile?.status || "Unknown"}</p>
+            <p className="mt-2 break-words text-base font-extrabold text-emerald-400 sm:text-lg">{profile?.status || "Unknown"}</p>
           </div>
           <div className="rounded-2xl bg-zinc-950 border border-zinc-800 p-4">
             <p className="text-xs text-zinc-500 font-bold uppercase">Rating</p>
-            <p className="mt-2 text-lg font-extrabold text-yellow-400">Rating {formatRating(profile?.rating || 0)}</p>
+            <p className="mt-2 break-words text-base font-extrabold text-yellow-400 sm:text-lg">Rating {formatRating(profile?.rating || 0)}</p>
           </div>
           <div className="rounded-2xl bg-zinc-950 border border-zinc-800 p-4">
             <p className="text-xs text-zinc-500 font-bold uppercase">Owner</p>
-            <p className="mt-2 text-lg font-extrabold text-white truncate">{profile?.ownerName || "Owner"}</p>
+            <p className="mt-2 truncate text-base font-extrabold text-white sm:text-lg">{profile?.ownerName || "Owner"}</p>
           </div>
         </div>
 
         <div className="mt-5 rounded-2xl bg-zinc-950 border border-zinc-800 p-4">
           <p className="text-xs text-zinc-500 font-bold uppercase">Account Email</p>
-          <p className="mt-2 text-sm font-bold text-zinc-200">{profile?.email}</p>
+          <p className="mt-2 break-all text-sm font-bold text-zinc-200">{profile?.email}</p>
         </div>
       </section>
     </div>
   );
 }
-
-
-

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { getAdminToken } from "../lib/authStorage";
@@ -105,8 +105,8 @@ export default function MerchantChat() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 animate-fade-in">
-      <aside className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-xl h-fit">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] animate-fade-in">
+      <aside className="min-w-0 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-xl h-fit">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-bold text-white">Customer Chat</h3>
@@ -144,10 +144,10 @@ export default function MerchantChat() {
         )}
       </aside>
 
-      <section className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl overflow-hidden min-h-[620px] flex flex-col">
-        <div className="border-b border-zinc-800 px-5 py-4 flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-white">{selectedCustomer || "Select a customer"}</h3>
+      <section className="min-w-0 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl overflow-hidden min-h-[560px] sm:min-h-[620px] flex flex-col">
+        <div className="border-b border-zinc-800 px-4 sm:px-5 py-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="truncate font-bold text-white">{selectedCustomer || "Select a customer"}</h3>
             <p className="text-xs text-zinc-500 mt-1">Messages poll every 5 seconds, matching the mobile behavior.</p>
           </div>
           {isLoading && <span className="w-5 h-5 border-2 border-orange-500/30 border-t-orange-400 rounded-full animate-spin" />}
@@ -155,7 +155,7 @@ export default function MerchantChat() {
 
         {error && <div className="mx-5 mt-4 rounded-xl border border-red-500/30 bg-red-950/30 p-3 text-sm text-red-300">{error}</div>}
 
-        <div className="flex-1 p-5 space-y-3 overflow-y-auto bg-zinc-950/50">
+        <div className="flex-1 p-4 sm:p-5 space-y-3 overflow-y-auto bg-zinc-950/50">
           {!selectedCustomer ? (
             <div className="h-full flex items-center justify-center text-sm text-zinc-500">Choose a customer conversation.</div>
           ) : thread.length === 0 ? (
@@ -165,7 +165,7 @@ export default function MerchantChat() {
               const mine = message.senderRole === "MERCHANT";
               return (
                 <div key={message.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[76%] rounded-2xl px-4 py-3 ${mine ? "bg-orange-600 text-white" : "bg-zinc-800 text-zinc-100"}`}>
+                  <div className={`max-w-[88%] break-words rounded-2xl px-4 py-3 sm:max-w-[76%] ${mine ? "bg-orange-600 text-white" : "bg-zinc-800 text-zinc-100"}`}>
                     <div className={`text-[11px] font-extrabold mb-1 ${mine ? "text-orange-100" : "text-orange-400"}`}>
                       {mine ? "You" : message.customerName || message.customerEmail}
                     </div>
@@ -184,7 +184,7 @@ export default function MerchantChat() {
           )}
         </div>
 
-        <div className="border-t border-zinc-800 p-4 bg-zinc-900">
+        <div className="border-t border-zinc-800 p-3 sm:p-4 bg-zinc-900">
           {file && (
             <div className="mb-3 flex items-center justify-between rounded-xl bg-zinc-950 border border-zinc-800 px-3 py-2 text-xs text-zinc-300">
               <span className="truncate">Attached: {file.name}</span>
@@ -200,12 +200,12 @@ export default function MerchantChat() {
               value={reply}
               onChange={(e) => setReply(e.target.value)}
               placeholder="Reply to customer..."
-              className="min-h-12 flex-1 resize-none rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500"
+              className="min-h-12 min-w-0 flex-1 resize-none rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500"
             />
             <button
               onClick={sendReply}
               disabled={isSending || !selectedCustomer}
-              className="rounded-xl bg-orange-600 px-5 py-3 text-sm font-extrabold text-white hover:bg-orange-500 disabled:opacity-50"
+              className="rounded-xl bg-orange-600 px-5 py-3 text-sm font-extrabold text-white hover:bg-orange-500 disabled:opacity-50 sm:w-auto"
             >
               {isSending ? "Sending..." : "Send"}
             </button>
