@@ -37,6 +37,30 @@ export default function Home() {
   // Dashboard states
   const [activeTab, setActiveTab] = useState("overview"); // overview | restaurants | orders | users | reports | kitchen | menu | chat | profile
 
+  const adminTabs = [
+    { id: "overview", label: "Dashboard", icon: "DB" },
+    { id: "restaurants", label: "Restaurants", icon: "RS" },
+    { id: "orders", label: "Orders", icon: "OR" },
+    { id: "users", label: "Users", icon: "US" },
+    { id: "reports", label: "Analytics", icon: "AN" },
+  ];
+
+  const merchantTabs = [
+    { id: "kitchen", label: "Kitchen", icon: "KQ" },
+    { id: "menu", label: "Menu", icon: "MN" },
+    { id: "chat", label: "Chat", icon: "CH" },
+    { id: "profile", label: "Profile", icon: "PF" },
+  ];
+
+  const visibleTabs = userRole === "ADMIN" ? adminTabs : merchantTabs;
+
+  const activeTitle =
+    userRole === "RESTAURANT" && activeTab === "kitchen" && restaurantName
+      ? `${restaurantName} Kitchen`
+      : activeTab === "overview"
+      ? "System Dashboard"
+      : visibleTabs.find((tab) => tab.id === activeTab)?.label || activeTab;
+
   // Check if user is already logged in from sessionStorage on mount
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -445,10 +469,10 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100 antialiased md:h-screen md:overflow-hidden">
+    <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100 antialiased lg:h-screen lg:overflow-hidden">
       {/* Sidebar navigation */}
-      <aside className="w-64 bg-zinc-900 border-r border-zinc-850 flex flex-col justify-between hidden md:flex">
-        <div className="p-6 space-y-8">
+      <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex-col justify-between hidden lg:flex">
+        <div className="p-5 space-y-7">
           {/* Clickable Logo */}
           <button
             onClick={() => setActiveTab(userRole === "RESTAURANT" ? "kitchen" : "overview")}
@@ -466,17 +490,11 @@ export default function Home() {
             {userRole === "ADMIN" ? (
               // Admin links
               <>
-                {[
-                  { id: "overview", label: "Dashboard", icon: "DB" },
-                  { id: "restaurants", label: "Restaurants", icon: "RS" },
-                  { id: "orders", label: "Live Orders", icon: "OR" },
-                  { id: "users", label: "Users Directory", icon: "US" },
-                  { id: "reports", label: "Analytics", icon: "AN" },
-                ].map((tab) => (
+                {adminTabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer ${
                       activeTab === tab.id
                         ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
@@ -490,16 +508,11 @@ export default function Home() {
             ) : (
               // Merchant links
               <>
-                {[
-                  { id: "kitchen", label: "Kitchen Queue", icon: "KQ" },
-                  { id: "menu", label: "Menu Manager", icon: "MN" },
-                  { id: "chat", label: "Customer Chat", icon: "\uD83D\uDCAC" },
-                  { id: "profile", label: "Profile", icon: "\uD83C\uDFEA" },
-                ].map((tab) => (
+                {merchantTabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer ${
                       activeTab === tab.id
                         ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
@@ -514,7 +527,7 @@ export default function Home() {
             {/* Logout button */}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-950/20 transition-all mt-6 border border-red-900/30 cursor-pointer"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-950/20 transition-all mt-6 border border-red-900/30 cursor-pointer"
             >
               <span>!</span>
               <span>Logout Account</span>
@@ -523,7 +536,7 @@ export default function Home() {
         </div>
 
         {/* Footer profile info */}
-        <div className="p-4 border-t border-zinc-850 bg-zinc-900/50">
+        <div className="p-4 border-t border-zinc-800 bg-zinc-900/50">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-xl bg-orange-600/10 border border-orange-500/30 flex items-center justify-center font-bold text-orange-400 text-sm">
               {userName.charAt(0).toUpperCase()}
@@ -539,62 +552,52 @@ export default function Home() {
       {/* Main Container */}
       <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
-        <header className="min-h-16 bg-zinc-900 border-b border-zinc-850 flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:hidden">
-          <button
-            onClick={() => setActiveTab(userRole === "RESTAURANT" ? "kitchen" : "overview")}
-            className="min-w-0 flex items-center space-x-2 text-left focus:outline-none cursor-pointer"
-          >
-            <div className="w-7 h-7 rounded-lg bg-orange-600 flex items-center justify-center font-bold text-white text-xs">
-              QB
-            </div>
-            <span className="min-w-0 truncate font-extrabold text-sm text-white">
-              {userRole === "RESTAURANT" && restaurantName ? restaurantName : "QuickBite"}
-            </span>
-          </button>
-
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-            <select
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
-              className="min-w-0 max-w-[150px] bg-zinc-800 border border-zinc-700 text-xs font-bold rounded-lg px-2 py-1 text-white focus:outline-none cursor-pointer"
+        <header className="sticky top-0 z-20 bg-zinc-950/95 border-b border-zinc-800 px-3 py-3 backdrop-blur lg:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              onClick={() => setActiveTab(userRole === "RESTAURANT" ? "kitchen" : "overview")}
+              className="min-w-0 flex items-center gap-2 text-left focus:outline-none cursor-pointer"
             >
-              {userRole === "ADMIN" ? (
-                <>
-                  <option value="overview">Dashboard</option>
-                  <option value="restaurants">Restaurants</option>
-                  <option value="orders">Orders</option>
-                  <option value="users">Users</option>
-                  <option value="reports">Analytics</option>
-                </>
-              ) : (
-                <>
-                  <option value="kitchen">Kitchen Queue</option>
-                  <option value="menu">Menu Manager</option>
-                  <option value="chat">Chat</option>
-                  <option value="profile">Profile</option>
-                </>
-              )}
-            </select>
+              <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center font-bold text-white text-xs">
+                QB
+              </div>
+              <span className="min-w-0 truncate font-extrabold text-sm text-white">
+                {userRole === "RESTAURANT" && restaurantName ? restaurantName : "QuickBite"}
+              </span>
+            </button>
+
             <button
               onClick={handleLogout}
-              className="px-2.5 py-1 bg-red-950/40 hover:bg-red-900/50 border border-red-800/40 text-red-400 text-xs font-bold rounded-lg transition-all cursor-pointer"
+              className="shrink-0 px-3 py-2 bg-red-950/40 hover:bg-red-900/50 border border-red-800/40 text-red-400 text-xs font-bold rounded-lg transition-all cursor-pointer"
             >
               Logout
             </button>
           </div>
+
+          <nav className="-mx-3 mt-3 flex gap-2 overflow-x-auto px-3 pb-1">
+            {visibleTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition-all ${
+                  activeTab === tab.id
+                    ? "bg-orange-600 text-white"
+                    : "bg-zinc-900 text-zinc-400 border border-zinc-800"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </header>
 
         {/* Content Wrapper */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-10 bg-zinc-950">
-          <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-b border-zinc-900 pb-5 md:pb-6">
+        <main className="flex-1 overflow-y-auto bg-zinc-950 p-3 sm:p-5 lg:p-8 xl:p-10">
+          <div className="mx-auto w-full max-w-7xl space-y-5 sm:space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-b border-zinc-900 pb-4 sm:pb-5">
               <div>
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-white capitalize leading-tight break-words">
-                  {userRole === "RESTAURANT" && activeTab === "kitchen" && restaurantName 
-                    ? `${restaurantName} Kitchen` 
-                    : activeTab === "overview" 
-                    ? "System Dashboard" 
-                    : activeTab}
+                  {activeTitle}
                 </h1>
                 <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
                   {userRole === "ADMIN" 

@@ -341,7 +341,7 @@ export default function MenuManager() {
             {menu.map((item) => (
               <div
                 key={item.id}
-                className="p-4 bg-zinc-950 border border-zinc-850 rounded-xl flex items-center justify-between gap-3 group hover:border-zinc-700 transition-all"
+                className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between gap-3 group hover:border-zinc-700 transition-all"
               >
                 <div className="min-w-0 flex items-center space-x-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

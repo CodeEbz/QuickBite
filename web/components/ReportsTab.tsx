@@ -157,26 +157,26 @@ export default function ReportsTab() {
           )}
         </div>
 
-        <div className="p-4 sm:p-6 bg-zinc-900 border border-zinc-850 rounded-2xl border-l-4 border-l-orange-600 flex flex-col justify-between">
+        <div className="p-4 sm:p-6 bg-zinc-900 border border-zinc-800 rounded-2xl border-l-4 border-l-orange-600 flex flex-col justify-between">
           <div className="space-y-4">
             <h4 className="text-md font-bold text-white">Platform Snapshot</h4>
             <p className="text-xs text-zinc-400 leading-relaxed">
               These figures now use live admin data. Commission remains an estimate until a payout ledger is added to the backend.
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="p-3 bg-zinc-850/60 rounded-xl border border-zinc-800">
+              <div className="p-3 bg-zinc-800/60 rounded-xl border border-zinc-800">
                 <span className="text-xs text-zinc-500 block">Restaurants</span>
                 <span className="break-words text-sm font-bold text-white mt-1 block">{toNumber(stats.totalRestaurants)}</span>
               </div>
-              <div className="p-3 bg-zinc-850/60 rounded-xl border border-zinc-800">
+              <div className="p-3 bg-zinc-800/60 rounded-xl border border-zinc-800">
                 <span className="text-xs text-zinc-500 block">Drivers</span>
                 <span className="break-words text-sm font-bold text-white mt-1 block">{toNumber(stats.activeDrivers)}</span>
               </div>
-              <div className="p-3 bg-zinc-850/60 rounded-xl border border-zinc-800">
+              <div className="p-3 bg-zinc-800/60 rounded-xl border border-zinc-800">
                 <span className="text-xs text-zinc-500 block">Pending</span>
                 <span className="break-words text-sm font-bold text-white mt-1 block">{toNumber(stats.pendingApprovals)}</span>
               </div>
-              <div className="p-3 bg-zinc-850/60 rounded-xl border border-zinc-800">
+              <div className="p-3 bg-zinc-800/60 rounded-xl border border-zinc-800">
                 <span className="text-xs text-zinc-500 block">Orders</span>
                 <span className="break-words text-sm font-bold text-white mt-1 block">{toNumber(stats.totalOrders)}</span>
               </div>

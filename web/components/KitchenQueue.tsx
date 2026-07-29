@@ -104,7 +104,7 @@ export default function KitchenQueue() {
           {orders.map((order) => (
             <div
               key={order.id}
-              className="p-4 sm:p-5 bg-zinc-950 border border-zinc-850 rounded-xl flex flex-col md:flex-row justify-between md:items-center gap-4"
+              className="p-4 sm:p-5 bg-zinc-950 border border-zinc-800 rounded-xl flex flex-col md:flex-row justify-between md:items-center gap-4"
             >
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
