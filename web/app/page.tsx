@@ -15,6 +15,116 @@ import { getAdminToken, getAdminRole, getAdminName, setAdminAuth, clearAdminAuth
 import { apiUrl } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
 
+type NavIconName = "dashboard" | "restaurants" | "orders" | "users" | "reports" | "kitchen" | "menu" | "chat" | "profile" | "logout";
+
+const NavIcon = ({ name }: { name: NavIconName }) => {
+  const commonProps = {
+    className: "h-4 w-4 shrink-0",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  switch (name) {
+    case "dashboard":
+      return (
+        <svg {...commonProps}>
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+      );
+    case "restaurants":
+      return (
+        <svg {...commonProps}>
+          <path d="M4 10h16" />
+          <path d="M5 10a7 7 0 0 1 14 0" />
+          <path d="M7 14h10" />
+          <path d="M6 18h12" />
+          <path d="M4 21h16" />
+        </svg>
+      );
+    case "orders":
+      return (
+        <svg {...commonProps}>
+          <path d="M7 3h10l2 4v14H5V7l2-4Z" />
+          <path d="M7 7h10" />
+          <path d="M9 12h6" />
+          <path d="M9 16h4" />
+        </svg>
+      );
+    case "users":
+      return (
+        <svg {...commonProps}>
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+          <path d="M16 11a3 3 0 1 0-.5-5.96" />
+          <path d="M18 20a5 5 0 0 0-3-4.6" />
+        </svg>
+      );
+    case "reports":
+      return (
+        <svg {...commonProps}>
+          <path d="M4 19V5" />
+          <path d="M4 19h16" />
+          <path d="M8 16v-5" />
+          <path d="M12 16V8" />
+          <path d="M16 16v-3" />
+        </svg>
+      );
+    case "kitchen":
+      return (
+        <svg {...commonProps}>
+          <path d="M5 3v7" />
+          <path d="M8 3v7" />
+          <path d="M5 7h3" />
+          <path d="M6.5 10v11" />
+          <path d="M16 3v18" />
+          <path d="M13 3h6" />
+          <path d="M13 9h6" />
+        </svg>
+      );
+    case "menu":
+      return (
+        <svg {...commonProps}>
+          <path d="M5 4h14v16H5z" />
+          <path d="M9 8h6" />
+          <path d="M9 12h6" />
+          <path d="M9 16h4" />
+        </svg>
+      );
+    case "chat":
+      return (
+        <svg {...commonProps}>
+          <path d="M21 12a8 8 0 0 1-8 8H7l-4 3 1.5-5A8 8 0 1 1 21 12Z" />
+          <path d="M8 12h.01" />
+          <path d="M12 12h.01" />
+          <path d="M16 12h.01" />
+        </svg>
+      );
+    case "profile":
+      return (
+        <svg {...commonProps}>
+          <path d="M4 10h16v10H4z" />
+          <path d="M7 10V6l5-3 5 3v4" />
+          <path d="M9 20v-5h6v5" />
+        </svg>
+      );
+    case "logout":
+      return (
+        <svg {...commonProps}>
+          <path d="M10 17l5-5-5-5" />
+          <path d="M15 12H3" />
+          <path d="M21 3v18" />
+        </svg>
+      );
+  }
+};
 export default function Home() {
   // Authentication states
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -38,18 +148,18 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("overview"); // overview | restaurants | orders | users | reports | kitchen | menu | chat | profile
 
   const adminTabs = [
-    { id: "overview", label: "Dashboard", icon: "DB" },
-    { id: "restaurants", label: "Restaurants", icon: "RS" },
-    { id: "orders", label: "Orders", icon: "OR" },
-    { id: "users", label: "Users", icon: "US" },
-    { id: "reports", label: "Analytics", icon: "AN" },
+    { id: "overview", label: "Dashboard", icon: "dashboard" as const },
+    { id: "restaurants", label: "Restaurants", icon: "restaurants" as const },
+    { id: "orders", label: "Orders", icon: "orders" as const },
+    { id: "users", label: "Users", icon: "users" as const },
+    { id: "reports", label: "Analytics", icon: "reports" as const },
   ];
 
   const merchantTabs = [
-    { id: "kitchen", label: "Kitchen", icon: "KQ" },
-    { id: "menu", label: "Menu", icon: "MN" },
-    { id: "chat", label: "Chat", icon: "CH" },
-    { id: "profile", label: "Profile", icon: "PF" },
+    { id: "kitchen", label: "Kitchen", icon: "kitchen" as const },
+    { id: "menu", label: "Menu", icon: "menu" as const },
+    { id: "chat", label: "Chat", icon: "chat" as const },
+    { id: "profile", label: "Profile", icon: "profile" as const },
   ];
 
   const visibleTabs = userRole === "ADMIN" ? adminTabs : merchantTabs;
@@ -500,7 +610,7 @@ export default function Home() {
                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
                     }`}
                   >
-                    <span>{tab.icon}</span>
+                    <NavIcon name={tab.icon} />
                     <span>{tab.label}</span>
                   </button>
                 ))}
@@ -518,7 +628,7 @@ export default function Home() {
                         : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
                     }`}
                   >
-                    <span>{tab.icon}</span>
+                    <NavIcon name={tab.icon} />
                     <span>{tab.label}</span>
                   </button>
                 ))}
@@ -529,7 +639,7 @@ export default function Home() {
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-950/20 transition-all mt-6 border border-red-900/30 cursor-pointer"
             >
-              <span>!</span>
+              <NavIcon name="logout" />
               <span>Logout Account</span>
             </button>
           </nav>
@@ -579,13 +689,14 @@ export default function Home() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition-all ${
+                className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-all ${
                   activeTab === tab.id
                     ? "bg-orange-600 text-white"
                     : "bg-zinc-900 text-zinc-400 border border-zinc-800"
                 }`}
               >
-                {tab.label}
+                <NavIcon name={tab.icon} />
+                <span>{tab.label}</span>
               </button>
             ))}
           </nav>
