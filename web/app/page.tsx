@@ -131,8 +131,9 @@ const NavIcon = ({ name }: { name: NavIconName }) => {
 export default function Home() {
   // Authentication states
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isRegisterMode, setIsRegisterMode] = useState(false); // Login vs Merchant Registration
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Login / Register Form fields
   const [email, setEmail] = useState("");
@@ -259,6 +260,7 @@ export default function Home() {
       setUserRole(data.role);
       setIsLoggedIn(true);
       setShowAuthModal(false);
+      setMobileMenuOpen(false);
 
       if (data.role === "RESTAURANT") {
         setActiveTab("kitchen");
@@ -315,6 +317,7 @@ export default function Home() {
       setRestaurantName(restaurantNameInput.trim());
       setIsLoggedIn(true);
       setShowAuthModal(false);
+      setMobileMenuOpen(false);
       setActiveTab("kitchen");
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Unable to register merchant profile."));
@@ -359,48 +362,47 @@ export default function Home() {
     }
   };
 
-  // LANDING PAGE VIEW FOR UNAUTHENTICATED VISITORS
+  // REFINED LANDING PAGE VIEW FOR UNAUTHENTICATED VISITORS
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#09090b] text-zinc-100 font-sans selection:bg-orange-500 selection:text-white relative overflow-x-hidden">
-        {/* Animated ambient background glows */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-600/20 blur-[140px] pointer-events-none rounded-full animate-pulse-glow" />
-        <div className="absolute top-[600px] right-0 w-[500px] h-[500px] bg-amber-600/10 blur-[160px] pointer-events-none rounded-full" />
-        <div className="absolute top-[1200px] left-0 w-[600px] h-[600px] bg-orange-700/10 blur-[180px] pointer-events-none rounded-full" />
+      <div className="min-h-screen bg-[#070709] text-zinc-100 font-sans selection:bg-orange-500 selection:text-white relative overflow-x-hidden bg-mesh-pattern">
+        {/* Subtle radial glows */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] sm:w-[900px] h-[350px] bg-orange-600/15 blur-[160px] pointer-events-none rounded-full animate-pulse-glow" />
+        <div className="absolute top-[800px] right-0 w-[400px] h-[400px] bg-amber-600/10 blur-[180px] pointer-events-none rounded-full" />
 
-        {/* TOP NAVIGATION BAR */}
-        <header className="sticky top-0 z-40 bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-800/80 transition-all">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        {/* RESPONSIVE TOP NAVIGATION BAR WITH MOBILE DRAWER */}
+        <header className="sticky top-0 z-40 bg-[#070709]/85 backdrop-blur-xl border-b border-white/10 transition-all">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-orange-600/30">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center font-extrabold text-white text-base sm:text-lg shadow-lg shadow-orange-600/25">
                 QB
               </div>
-              <div>
-                <span className="font-extrabold text-2xl tracking-tight text-white">QuickBite</span>
-                <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30 rounded-full">
+              <div className="flex items-center space-x-2">
+                <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-white">QuickBite</span>
+                <span className="hidden xs:inline-block px-2 py-0.5 text-[10px] font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30 rounded-full">
                   Ecosystem
                 </span>
               </div>
             </div>
 
-            {/* Nav links */}
-            <nav className="hidden md:flex items-center space-x-8 text-sm font-semibold text-zinc-400">
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center space-x-8 text-xs sm:text-sm font-semibold text-zinc-400">
               <a href="#ecosystem" className="hover:text-white transition-colors">Platform</a>
               <a href="#download" className="hover:text-white transition-colors">Mobile App</a>
-              <a href="#roles" className="hover:text-white transition-colors">Roles & Access</a>
-              <a href="#portal" className="hover:text-white transition-colors">Web Portal</a>
+              <a href="#roles" className="hover:text-white transition-colors">Ecosystem Roles</a>
+              <a href="#portal" className="hover:text-white transition-colors">Web Portal Access</a>
             </nav>
 
-            {/* Actions */}
-            <div className="flex items-center space-x-3 sm:space-x-4">
+            {/* Desktop Action Buttons */}
+            <div className="hidden md:flex items-center space-x-3">
               <a
                 href={APK_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden sm:inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-white font-bold text-xs transition-all shadow-sm group"
+                className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 font-bold text-xs transition-all shadow-sm group"
               >
-                <svg className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 <span>Download APK</span>
@@ -408,55 +410,132 @@ export default function Home() {
 
               <button
                 onClick={() => { setShowAuthModal(true); setError(null); }}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold text-xs shadow-lg shadow-orange-600/30 hover:shadow-orange-600/50 transition-all cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold text-xs shadow-lg shadow-orange-600/25 transition-all cursor-pointer"
               >
                 Portal Sign In
               </button>
             </div>
+
+            {/* Mobile Hamburger Menu Toggle Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white focus:outline-none cursor-pointer"
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileMenuOpen ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
           </div>
+
+          {/* Mobile Drawer Navigation Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-b border-white/10 bg-[#070709]/95 backdrop-blur-2xl px-4 pt-3 pb-6 space-y-4 animate-slide-down">
+              <nav className="flex flex-col space-y-3 text-sm font-semibold text-zinc-300">
+                <a
+                  href="#ecosystem"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg hover:bg-zinc-900 transition-colors"
+                >
+                  Platform Overview
+                </a>
+                <a
+                  href="#download"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg hover:bg-zinc-900 transition-colors text-emerald-400 font-bold"
+                >
+                  📱 Mobile APK App (Customers & Drivers)
+                </a>
+                <a
+                  href="#roles"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg hover:bg-zinc-900 transition-colors"
+                >
+                  4 Ecosystem Roles
+                </a>
+                <a
+                  href="#portal"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg hover:bg-zinc-900 transition-colors text-orange-400 font-bold"
+                >
+                  💻 Web Portal Access (Merchants & Admins)
+                </a>
+              </nav>
+
+              <div className="pt-3 border-t border-zinc-800 flex flex-col gap-2.5">
+                <a
+                  href={APK_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-emerald-600/20 transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span>Download QuickBite Android APK</span>
+                </a>
+
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setShowAuthModal(true);
+                    setError(null);
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 text-white font-extrabold text-xs shadow-lg shadow-orange-600/20 cursor-pointer"
+                >
+                  Merchant & Admin Sign In
+                </button>
+              </div>
+            </div>
+          )}
         </header>
 
         {/* HERO SECTION */}
-        <section id="ecosystem" className="relative pt-12 pb-20 sm:pt-20 sm:pb-32 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* Left Hero Content */}
-            <div className="lg:col-span-7 space-y-8 text-center lg:text-left">
-              <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full glass-panel border-orange-500/30 text-orange-400 text-xs font-bold shadow-inner">
+        <section id="ecosystem" className="relative pt-10 pb-16 sm:pt-20 sm:pb-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Left Content */}
+            <div className="lg:col-span-7 space-y-6 sm:space-y-8 text-center lg:text-left">
+              <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full glass-panel border-orange-500/30 text-orange-400 text-xs font-extrabold shadow-inner">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span>Next-Generation Food Delivery Platform</span>
+                <span>Unified 4-Sided Food Delivery Ecosystem</span>
               </div>
 
-              <h1 className="text-4xl sm:text-6xl xl:text-7xl font-extrabold tracking-tight text-white leading-[1.1]">
+              <h1 className="text-3xl xs:text-4xl sm:text-6xl xl:text-7xl font-black tracking-tight text-white leading-[1.15]">
                 Delicious Food, <br className="hidden sm:inline" />
                 <span className="gradient-text-orange">Delivered Fast.</span>
               </h1>
 
-              <p className="text-zinc-400 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                QuickBite bridges customers, restaurant merchants, dispatch riders, and administrators in one unified platform. Fulfill orders in real-time, track drivers with live GPS, and manage your kitchen effortlessly.
+              <p className="text-zinc-400 text-xs sm:text-base max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                QuickBite powers end-to-end food delivery. Customers order meals, Merchants manage kitchen queues, Drivers share live location, and Admins oversee platform operations.
               </p>
 
-              {/* ACCESS GUIDE BOX */}
+              {/* UNCLUTTERED ACCESS DIVISION CARDS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 text-left">
-                {/* Customer / Driver Callout */}
-                <div className="glass-card p-5 rounded-2xl border-emerald-500/30 relative overflow-hidden group hover:border-emerald-500/50 transition-all">
-                  <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all" />
-                  <div className="flex items-center space-x-3 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">
+                {/* Customers & Drivers Card */}
+                <div className="glass-card p-4 sm:p-5 rounded-2xl border-emerald-500/30 space-y-3 relative overflow-hidden">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-base shrink-0">
                       📱
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-sm text-white">For Customers & Drivers</h3>
-                      <p className="text-[11px] text-emerald-400 font-bold">Use Mobile App (APK)</p>
+                      <h3 className="font-extrabold text-xs sm:text-sm text-white">Customers & Drivers</h3>
+                      <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Mobile App (.APK)</p>
                     </div>
                   </div>
-                  <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
-                    Order meals, track live dispatch delivery, save addresses, or go online as a driver.
+                  <p className="text-[11px] sm:text-xs text-zinc-400 leading-relaxed">
+                    Download the mobile app to browse menus, track live order status, and complete Paystack checkout.
                   </p>
                   <a
                     href={APK_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-emerald-600/25 transition-all"
+                    className="w-full py-2.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center space-x-2 shadow-md transition-all"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -465,26 +544,25 @@ export default function Home() {
                   </a>
                 </div>
 
-                {/* Merchant / Admin Callout */}
-                <div className="glass-card p-5 rounded-2xl border-orange-500/30 relative overflow-hidden group hover:border-orange-500/50 transition-all">
-                  <div className="absolute -top-10 -right-10 w-24 h-24 bg-orange-500/10 rounded-full blur-xl group-hover:bg-orange-500/20 transition-all" />
-                  <div className="flex items-center space-x-3 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold text-sm">
+                {/* Merchants & Admins Card */}
+                <div className="glass-card p-4 sm:p-5 rounded-2xl border-orange-500/30 space-y-3 relative overflow-hidden">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-9 h-9 rounded-xl bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold text-base shrink-0">
                       💻
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-sm text-white">For Merchants & Admins</h3>
-                      <p className="text-[11px] text-orange-400 font-bold">Use Web Portal Access</p>
+                      <h3 className="font-extrabold text-xs sm:text-sm text-white">Merchants & Admins</h3>
+                      <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider">Web Portal Access</p>
                     </div>
                   </div>
-                  <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
-                    Manage kitchen queues, edit food menus, respond to customer chats, & audit platform metrics.
+                  <p className="text-[11px] sm:text-xs text-zinc-400 leading-relaxed">
+                    Access your web dashboard to update menus, manage kitchen orders, chat with customers, and review reports.
                   </p>
                   <button
                     onClick={() => { setShowAuthModal(true); setIsRegisterMode(false); setError(null); }}
-                    className="w-full py-2.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-orange-600/25 transition-all cursor-pointer"
+                    className="w-full py-2.5 px-3.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-xs flex items-center justify-center space-x-2 shadow-md transition-all cursor-pointer"
                   >
-                    <span>Log In to Web Portal</span>
+                    <span>Sign In to Web Portal</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
@@ -493,41 +571,38 @@ export default function Home() {
               </div>
 
               {/* Stats badges */}
-              <div className="pt-6 border-t border-zinc-800/80 flex flex-wrap items-center justify-center lg:justify-start gap-8">
+              <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-center lg:justify-start gap-6 sm:gap-10">
                 <div>
-                  <p className="text-2xl font-black text-white">99.9%</p>
-                  <p className="text-xs text-zinc-500 font-semibold">Uptime SLA</p>
+                  <p className="text-xl sm:text-2xl font-black text-white">99.9%</p>
+                  <p className="text-[10px] sm:text-xs text-zinc-400 font-semibold">Uptime SLA</p>
                 </div>
-                <div className="w-px h-8 bg-zinc-800 hidden sm:block" />
+                <div className="w-px h-8 bg-zinc-800" />
                 <div>
-                  <p className="text-2xl font-black text-orange-400">Paystack</p>
-                  <p className="text-xs text-zinc-500 font-semibold">Instant Payments</p>
+                  <p className="text-xl sm:text-2xl font-black text-orange-400">Paystack</p>
+                  <p className="text-[10px] sm:text-xs text-zinc-400 font-semibold">Instant Payments</p>
                 </div>
-                <div className="w-px h-8 bg-zinc-800 hidden sm:block" />
+                <div className="w-px h-8 bg-zinc-800" />
                 <div>
-                  <p className="text-2xl font-black text-emerald-400">Live GPS</p>
-                  <p className="text-xs text-zinc-500 font-semibold">Real-Time Dispatch</p>
+                  <p className="text-xl sm:text-2xl font-black text-emerald-400">Live GPS</p>
+                  <p className="text-[10px] sm:text-xs text-zinc-400 font-semibold">Real-Time Dispatch</p>
                 </div>
               </div>
             </div>
 
-            {/* Right Hero Preview Mockup */}
-            <div className="lg:col-span-5 relative flex justify-center">
-              <div className="relative w-full max-w-md">
-                {/* Floating Glow backdrop */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-orange-600/30 to-amber-500/20 rounded-3xl blur-2xl transform rotate-3 scale-95" />
+            {/* Right Hero Graphic */}
+            <div className="lg:col-span-5 relative flex justify-center mt-4 lg:mt-0">
+              <div className="relative w-full max-w-sm sm:max-w-md">
+                <div className="absolute inset-0 bg-gradient-to-tr from-orange-600/20 to-amber-500/10 rounded-3xl blur-2xl transform scale-95" />
 
-                {/* Main Card Graphic */}
-                <div className="relative glass-panel p-6 rounded-3xl border border-zinc-700/60 shadow-2xl space-y-5 animate-float">
-                  {/* Mock App Header */}
-                  <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center text-white font-bold text-sm">
+                <div className="relative glass-panel p-5 sm:p-6 rounded-3xl border border-zinc-800 shadow-2xl space-y-4 animate-float">
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-white text-xs font-bold">
                         🍔
                       </div>
                       <div>
-                        <p className="text-xs font-extrabold text-white">QuickBite Active Order</p>
-                        <p className="text-[10px] text-zinc-400">Ref: #QB-94821</p>
+                        <p className="text-xs font-extrabold text-white">Order Fulfill Queue</p>
+                        <p className="text-[10px] text-zinc-400">Ref #QB-94821</p>
                       </div>
                     </div>
                     <span className="px-2.5 py-1 text-[10px] font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full animate-pulse">
@@ -535,471 +610,191 @@ export default function Home() {
                     </span>
                   </div>
 
-                  {/* Order Items Mock */}
-                  <div className="space-y-3 bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-zinc-300 font-bold">1x Double Smoked Bacon Cheeseburger</span>
+                  <div className="space-y-2 bg-zinc-900/70 p-3.5 rounded-xl border border-zinc-800/80 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-zinc-300 font-bold">1x Bacon Cheeseburger</span>
                       <span className="text-white font-bold">$14.50</span>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-zinc-300 font-bold">1x Loaded Seasoned Curly Fries</span>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-300 font-bold">1x Loaded Seasoned Fries</span>
                       <span className="text-white font-bold">$5.00</span>
                     </div>
-                    <div className="flex justify-between text-xs pt-2 border-t border-zinc-800/80">
-                      <span className="text-zinc-400">Paystack Verified</span>
-                      <span className="text-emerald-400 font-extrabold">$19.50 Paid</span>
+                    <div className="flex justify-between text-[11px] pt-1.5 border-t border-zinc-800">
+                      <span className="text-zinc-400">Paystack Verification</span>
+                      <span className="text-emerald-400 font-bold">Paid ($19.50)</span>
                     </div>
                   </div>
 
-                  {/* Driver Tracker Mock */}
-                  <div className="flex items-center justify-between bg-emerald-950/30 p-3.5 rounded-2xl border border-emerald-500/30">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-600/30 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                  <div className="flex items-center justify-between bg-emerald-950/30 p-3 rounded-xl border border-emerald-500/30 text-xs">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-7 h-7 rounded-full bg-emerald-600/30 text-emerald-400 flex items-center justify-center font-bold text-xs">
                         🏍️
                       </div>
                       <div>
-                        <p className="text-xs font-extrabold text-white">Rider: Alex Turner</p>
-                        <p className="text-[10px] text-emerald-400 font-semibold">Live GPS Active • 8 mins away</p>
+                        <p className="font-extrabold text-white text-[11px]">Rider: Alex Turner</p>
+                        <p className="text-[9px] text-emerald-400">GPS Live • 8 mins away</p>
                       </div>
                     </div>
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                   </div>
-
-                  {/* Merchant Kitchen Notification */}
-                  <div className="p-3 bg-orange-950/30 rounded-xl border border-orange-500/20 text-xs text-orange-300 flex items-center justify-between">
-                    <span>Kitchen status synced to Web Portal</span>
-                    <span className="font-extrabold text-[10px] bg-orange-500 text-white px-2 py-0.5 rounded">Live</span>
-                  </div>
-                </div>
-
-                {/* Floating secondary badge top left */}
-                <div className="absolute -top-6 -left-6 glass-card px-4 py-3 rounded-2xl border border-zinc-700/80 shadow-xl flex items-center space-x-3 animate-float-reverse hidden sm:flex">
-                  <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm">
-                    ⭐
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">4.9 / 5 Rating</p>
-                    <p className="text-[10px] text-zinc-400">From 12,000+ orders</p>
-                  </div>
-                </div>
-
-                {/* Floating secondary badge bottom right */}
-                <div className="absolute -bottom-6 -right-6 glass-card px-4 py-3 rounded-2xl border border-zinc-700/80 shadow-xl flex items-center space-x-3 animate-float hidden sm:flex">
-                  <div className="w-8 h-8 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-sm">
-                    🚀
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">Fast Fulfill</p>
-                    <p className="text-[10px] text-zinc-400">Avg delivery 24 mins</p>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* CUSTOMER MOBILE APP DOWNLOAD SPOTLIGHT */}
-        <section id="download" className="py-16 sm:py-24 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 border-y border-zinc-800/80 relative">
+        {/* CUSTOMER MOBILE APP SPOTLIGHT */}
+        <section id="download" className="py-14 sm:py-20 bg-zinc-900/40 border-y border-white/10 relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-orange-500/30 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="glass-panel p-6 sm:p-10 rounded-3xl border border-emerald-500/30 space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <div className="lg:col-span-7 space-y-4 text-center lg:text-left">
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold">
+                    📱 Mobile Ordering Experience
+                  </span>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-                <div className="lg:col-span-8 space-y-5 text-center lg:text-left">
-                  <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold">
-                    <span>📱 QuickBite Mobile Application</span>
-                  </div>
-
-                  <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
-                    Order Food on the Go with <br className="hidden sm:inline" />
-                    <span className="gradient-text-orange">Our Official Mobile App</span>
+                  <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+                    Download the QuickBite App <br className="hidden sm:inline" />
+                    <span className="gradient-text-orange">To Start Ordering Food</span>
                   </h2>
 
-                  <p className="text-zinc-400 text-sm sm:text-base max-w-2xl leading-relaxed">
-                    To start ordering delicious meals, tracking deliveries live, or saving your delivery locations, download our native Android app (.APK file) directly to your device.
+                  <p className="text-xs sm:text-sm text-zinc-400 max-w-xl leading-relaxed">
+                    Customers and Drivers access the QuickBite platform using our official Android APK. Download directly to your phone to browse menus, place orders, and track deliveries.
                   </p>
 
-                  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+                  <div className="pt-2">
                     <a
                       href={APK_URL}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 flex items-center space-x-3 transition-all hover:scale-105"
+                      className="inline-flex items-center space-x-3 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/25 transition-all"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
-                      <span>Download QuickBite APK (Android)</span>
+                      <span>Download Android APK Package</span>
                     </a>
-
-                    <div className="text-left text-xs text-zinc-400">
-                      <p className="font-bold text-white">Direct EAS Expo Build</p>
-                      <p className="text-[11px] text-zinc-500">Android Package (.APK) • SDK 54</p>
-                    </div>
                   </div>
                 </div>
 
-                {/* Steps box */}
-                <div className="lg:col-span-4 glass-card p-6 rounded-2xl border border-zinc-800 space-y-4">
-                  <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center space-x-2">
-                    <span>Installation Steps</span>
+                <div className="lg:col-span-5 glass-card p-5 rounded-2xl border border-zinc-800 space-y-3">
+                  <h3 className="text-xs font-extrabold text-white uppercase tracking-wider">
+                    Quick Installation Steps
                   </h3>
-
-                  <ol className="space-y-3 text-xs text-zinc-300">
-                    <li className="flex items-start space-x-3">
-                      <span className="w-5 h-5 rounded-full bg-orange-600/30 text-orange-400 font-bold flex items-center justify-center shrink-0">1</span>
-                      <span>Click <strong>Download QuickBite APK</strong> to download the package.</span>
-                    </li>
-                    <li className="flex items-start space-x-3">
-                      <span className="w-5 h-5 rounded-full bg-orange-600/30 text-orange-400 font-bold flex items-center justify-center shrink-0">2</span>
-                      <span>Allow installation from unknown sources if prompted by Android.</span>
-                    </li>
-                    <li className="flex items-start space-x-3">
-                      <span className="w-5 h-5 rounded-full bg-orange-600/30 text-orange-400 font-bold flex items-center justify-center shrink-0">3</span>
-                      <span>Open QuickBite, sign up or log in, and enjoy your meal!</span>
-                    </li>
-                  </ol>
+                  <div className="space-y-2.5 text-xs text-zinc-300">
+                    <div className="flex items-start space-x-2.5">
+                      <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-[10px] shrink-0">1</span>
+                      <span>Tap <strong>Download Android APK</strong> above to save the package.</span>
+                    </div>
+                    <div className="flex items-start space-x-2.5">
+                      <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-[10px] shrink-0">2</span>
+                      <span>Allow install from unknown sources in Android settings.</span>
+                    </div>
+                    <div className="flex items-start space-x-2.5">
+                      <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-[10px] shrink-0">3</span>
+                      <span>Launch QuickBite, sign up or log in, and place your first order!</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ECOSYSTEM 4-ROLE BREAKDOWN */}
-        <section id="roles" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-xs font-bold text-orange-400 uppercase tracking-widest">Platform Architecture</h2>
-            <p className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
-              One Unified Marketplace, <span className="gradient-text-orange">4 Tailored Roles</span>
-            </p>
-            <p className="text-zinc-400 text-sm max-w-xl mx-auto">
-              QuickBite connects customers, restaurants, drivers, and platform operators seamlessly across mobile and web interfaces.
-            </p>
+        {/* 4-ROLE ECOSYSTEM GRID */}
+        <section id="roles" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-3 mb-12">
+            <span className="text-xs font-bold text-orange-400 uppercase tracking-widest">Platform Roles</span>
+            <h2 className="text-2xl sm:text-4xl font-black text-white">
+              One Marketplace, <span className="gradient-text-orange">4 Specialized Experiences</span>
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Customer Role Card */}
-            <div className="glass-card p-6 rounded-3xl border border-zinc-800 hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                  🛒
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {/* Customer Card */}
+            <div className="glass-card p-5 rounded-2xl border border-zinc-800 space-y-3 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl">🛒</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">Mobile App</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-extrabold text-lg text-white">Customers</h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-md">Mobile App</span>
-                  </div>
-                  <p className="text-xs text-zinc-400 leading-relaxed">
-                    Browse active food menus, apply promo codes like <code className="text-orange-400 font-mono">FIRST50</code>, pay safely via Paystack, and track order dispatch live.
-                  </p>
-                </div>
-              </div>
-              <div className="pt-6 border-t border-zinc-800/80 mt-6">
-                <a
-                  href={APK_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center space-x-1"
-                >
-                  <span>Download Mobile APK</span>
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-
-            {/* Merchant Role Card */}
-            <div className="glass-card p-6 rounded-3xl border border-zinc-800 hover:border-orange-500/40 transition-all flex flex-col justify-between group">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                  🍳
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-extrabold text-lg text-white">Merchants</h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-md">Web & Mobile</span>
-                  </div>
-                  <p className="text-xs text-zinc-400 leading-relaxed">
-                    Manage incoming kitchen queues, update prices and food items, upload menu photos, and chat directly with customers.
-                  </p>
-                </div>
-              </div>
-              <div className="pt-6 border-t border-zinc-800/80 mt-6">
-                <button
-                  onClick={() => { setShowAuthModal(true); setIsRegisterMode(true); setError(null); }}
-                  className="text-xs font-bold text-orange-400 hover:text-orange-300 flex items-center space-x-1 cursor-pointer"
-                >
-                  <span>Register Restaurant Partner</span>
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Driver Role Card */}
-            <div className="glass-card p-6 rounded-3xl border border-zinc-800 hover:border-amber-500/40 transition-all flex flex-col justify-between group">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                  🛵
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-extrabold text-lg text-white">Drivers</h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-md">Mobile App</span>
-                  </div>
-                  <p className="text-xs text-zinc-400 leading-relaxed">
-                    Toggle online availability, accept available delivery jobs, stream real-time GPS location, and complete customer drop-offs.
-                  </p>
-                </div>
-              </div>
-              <div className="pt-6 border-t border-zinc-800/80 mt-6">
-                <a
-                  href={APK_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center space-x-1"
-                >
-                  <span>Get Mobile App</span>
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-
-            {/* Admin Role Card */}
-            <div className="glass-card p-6 rounded-3xl border border-zinc-800 hover:border-purple-500/40 transition-all flex flex-col justify-between group">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                  ⚡
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-extrabold text-lg text-white">Admins</h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-md">Web Portal</span>
-                  </div>
-                  <p className="text-xs text-zinc-400 leading-relaxed">
-                    Approve or suspend restaurant partners, audit platform transaction metrics, manage users, and issue order cancellations.
-                  </p>
-                </div>
-              </div>
-              <div className="pt-6 border-t border-zinc-800/80 mt-6">
-                <button
-                  onClick={() => { setShowAuthModal(true); setIsRegisterMode(false); setError(null); }}
-                  className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center space-x-1 cursor-pointer"
-                >
-                  <span>Admin Portal Login</span>
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* INLINE PORTAL ACCESS SECTION */}
-        <section id="portal" className="py-20 bg-zinc-900/40 border-t border-zinc-800/80">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center space-y-4 mb-10">
-              <span className="px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/30 text-xs font-bold">
-                Web Portal Access
-              </span>
-              <h2 className="text-3xl font-extrabold text-white">
-                Log In or Register Your Restaurant
-              </h2>
-              <p className="text-xs text-zinc-400">
-                Restricted portal for verified Restaurant Merchants and Platform Administrators.
-              </p>
-            </div>
-
-            <div className="glass-panel p-6 sm:p-10 rounded-3xl border border-zinc-800 shadow-2xl max-w-md mx-auto">
-              {/* Toggle Mode Header */}
-              <div className="flex bg-zinc-900 p-1.5 rounded-2xl border border-zinc-800 mb-6">
-                <button
-                  type="button"
-                  onClick={() => { setIsRegisterMode(false); setError(null); }}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    !isRegisterMode ? "bg-orange-600 text-white shadow-md" : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  Account Login
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setIsRegisterMode(true); setError(null); }}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    isRegisterMode ? "bg-orange-600 text-white shadow-md" : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  Sign Up Merchant
-                </button>
-              </div>
-
-              {error && (
-                <div className="p-4 mb-5 bg-red-950/40 border border-red-500/25 rounded-2xl flex items-center space-x-3 text-red-400 text-xs">
-                  <span>⚠️</span>
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {!isRegisterMode ? (
-                /* LOGIN FORM */
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Email Address</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="admin@quickbite.com or merchant@store.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full h-12 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-all text-xs"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Password</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full h-12 pl-4 pr-12 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-all text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs select-none"
-                      >
-                        {showPassword ? "Hide" : "Show"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-12 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-600/25 flex items-center justify-center text-xs cursor-pointer mt-2"
-                  >
-                    {isLoading ? (
-                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      "Sign In to Web Portal"
-                    )}
-                  </button>
-                </form>
-              ) : (
-                /* REGISTER MERCHANT FORM */
-                <form onSubmit={handleRegisterMerchant} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Owner Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Chef John Smith"
-                      value={ownerName}
-                      onChange={(e) => setOwnerName(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-all text-xs"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Restaurant Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Gourmet Burger Hub"
-                      value={restaurantNameInput}
-                      onChange={(e) => setRestaurantNameInput(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-all text-xs"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Cuisine Type</label>
-                      <select
-                        value={cuisineTypeInput}
-                        onChange={(e) => setCuisineTypeInput(e.target.value)}
-                        className="w-full h-11 px-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white focus:outline-none focus:border-orange-500 text-xs cursor-pointer"
-                      >
-                        <option value="Burgers & American">Burgers & American</option>
-                        <option value="Pizza & Italian">Pizza & Italian</option>
-                        <option value="Asian & Sushi">Asian & Sushi</option>
-                        <option value="Grill & Steakhouse">Grill & Steakhouse</option>
-                        <option value="Desserts & Bakery">Desserts & Bakery</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Email</label>
-                      <input
-                        type="email"
-                        required
-                        placeholder="merchant@store.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full h-11 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-all text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Password</label>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-all text-xs"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-12 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-600/25 flex items-center justify-center text-xs mt-2 cursor-pointer"
-                  >
-                    {isLoading ? (
-                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      "Register Restaurant Partner"
-                    )}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* AUTH MODAL POPUP */}
-        {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
-            <div className="relative w-full max-w-md bg-zinc-900 glass-panel p-6 sm:p-8 rounded-3xl border border-zinc-700 shadow-2xl space-y-6">
-              <button
-                onClick={() => setShowAuthModal(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center text-sm font-bold transition-all cursor-pointer"
-              >
-                ✕
-              </button>
-
-              <div className="space-y-1 text-center">
-                <h3 className="text-xl font-extrabold text-white">
-                  {isRegisterMode ? "Register Merchant" : "Web Portal Login"}
-                </h3>
-                <p className="text-xs text-zinc-400">
-                  {isRegisterMode ? "Partner with QuickBite to receive orders" : "Sign in with your Merchant or Admin credentials"}
+                <h3 className="font-extrabold text-base text-white">Customers</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Browse restaurant menus, add items to cart, use promo code <code className="text-orange-400">FIRST50</code>, and pay via Paystack.
                 </p>
               </div>
+              <a href={APK_URL} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-emerald-400 hover:underline pt-2">
+                Download APK →
+              </a>
+            </div>
 
-              {/* Mode Toggle */}
-              <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+            {/* Merchant Card */}
+            <div className="glass-card p-5 rounded-2xl border border-zinc-800 space-y-3 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl">🍳</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded">Web & Mobile</span>
+                </div>
+                <h3 className="font-extrabold text-base text-white">Merchants</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Receive kitchen orders, update food prices and menu items, reply to customer chat, and update status.
+                </p>
+              </div>
+              <button onClick={() => { setShowAuthModal(true); setIsRegisterMode(true); setError(null); }} className="text-xs font-bold text-orange-400 hover:underline text-left pt-2 cursor-pointer">
+                Register Restaurant →
+              </button>
+            </div>
+
+            {/* Driver Card */}
+            <div className="glass-card p-5 rounded-2xl border border-zinc-800 space-y-3 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl">🛵</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded">Mobile App</span>
+                </div>
+                <h3 className="font-extrabold text-base text-white">Drivers</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Go online, accept nearby delivery jobs, share live GPS position, and complete food deliveries.
+                </p>
+              </div>
+              <a href={APK_URL} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-amber-400 hover:underline pt-2">
+                Get Mobile App →
+              </a>
+            </div>
+
+            {/* Admin Card */}
+            <div className="glass-card p-5 rounded-2xl border border-zinc-800 space-y-3 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl">⚡</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">Web Portal</span>
+                </div>
+                <h3 className="font-extrabold text-base text-white">Admins</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Monitor platform revenue metrics, approve or suspend restaurant partners, audit accounts, and view analytics.
+                </p>
+              </div>
+              <button onClick={() => { setShowAuthModal(true); setIsRegisterMode(false); setError(null); }} className="text-xs font-bold text-purple-400 hover:underline text-left pt-2 cursor-pointer">
+                Admin Sign In →
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* WEB PORTAL LOGIN / REGISTER SECTION */}
+        <section id="portal" className="py-16 sm:py-20 bg-zinc-900/50 border-t border-white/10">
+          <div className="max-w-md mx-auto px-4">
+            <div className="text-center space-y-2 mb-8">
+              <span className="px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/30 text-xs font-bold">
+                Web Portal Sign In
+              </span>
+              <h2 className="text-2xl font-extrabold text-white">
+                Log In or Register Merchant
+              </h2>
+            </div>
+
+            <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-zinc-800 shadow-2xl">
+              <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-800 mb-5">
                 <button
                   type="button"
                   onClick={() => { setIsRegisterMode(false); setError(null); }}
@@ -1016,12 +811,12 @@ export default function Home() {
                     isRegisterMode ? "bg-orange-600 text-white" : "text-zinc-400 hover:text-zinc-200"
                   }`}
                 >
-                  Register Merchant
+                  Sign Up Merchant
                 </button>
               </div>
 
               {error && (
-                <div className="p-3 bg-red-950/40 border border-red-500/25 rounded-xl text-red-400 text-xs">
+                <div className="p-3 mb-4 bg-red-950/40 border border-red-500/25 rounded-xl text-red-400 text-xs">
                   {error}
                 </div>
               )}
@@ -1036,7 +831,7 @@ export default function Home() {
                       placeholder="admin@quickbite.com or merchant@store.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 text-xs"
+                      className="w-full h-11 px-4 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 text-xs focus:outline-none focus:border-orange-500"
                     />
                   </div>
 
@@ -1048,14 +843,14 @@ export default function Home() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 text-xs"
+                      className="w-full h-11 px-4 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 text-xs focus:outline-none focus:border-orange-500"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-11 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-600/25 flex items-center justify-center text-xs cursor-pointer"
+                    className="w-full h-11 bg-orange-600 hover:bg-orange-500 text-white font-extrabold rounded-xl text-xs transition-all shadow-md cursor-pointer mt-1"
                   >
                     {isLoading ? "Authenticating..." : "Sign In to Web Portal"}
                   </button>
@@ -1070,7 +865,7 @@ export default function Home() {
                       placeholder="e.g. Chef John Smith"
                       value={ownerName}
                       onChange={(e) => setOwnerName(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 text-xs"
+                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs"
                     />
                   </div>
 
@@ -1082,7 +877,7 @@ export default function Home() {
                       placeholder="e.g. Gourmet Burger Hub"
                       value={restaurantNameInput}
                       onChange={(e) => setRestaurantNameInput(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 text-xs"
+                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs"
                     />
                   </div>
 
@@ -1129,9 +924,169 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-11 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition-all text-xs cursor-pointer mt-1"
+                    className="w-full h-11 bg-orange-600 hover:bg-orange-500 text-white font-extrabold rounded-xl text-xs transition-all cursor-pointer mt-1"
                   >
-                    {isLoading ? "Creating Account..." : "Register Restaurant Partner"}
+                    {isLoading ? "Registering..." : "Register Restaurant"}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* AUTH MODAL POPUP */}
+        {showAuthModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
+            <div className="relative w-full max-w-md bg-[#070709] glass-panel p-6 sm:p-8 rounded-3xl border border-zinc-700 shadow-2xl space-y-5">
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center text-xs font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+
+              <div className="space-y-1 text-center">
+                <h3 className="text-lg font-extrabold text-white">
+                  {isRegisterMode ? "Register Restaurant" : "Web Portal Login"}
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  {isRegisterMode ? "Partner with QuickBite to receive orders" : "Sign in with your Merchant or Admin account"}
+                </p>
+              </div>
+
+              <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => { setIsRegisterMode(false); setError(null); }}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    !isRegisterMode ? "bg-orange-600 text-white" : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Portal Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsRegisterMode(true); setError(null); }}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    isRegisterMode ? "bg-orange-600 text-white" : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Register Merchant
+                </button>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-950/40 border border-red-500/25 rounded-xl text-red-400 text-xs">
+                  {error}
+                </div>
+              )}
+
+              {!isRegisterMode ? (
+                <form onSubmit={handleLogin} className="space-y-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-zinc-400 uppercase">Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="admin@quickbite.com or merchant@store.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-zinc-400 uppercase">Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-11 bg-orange-600 hover:bg-orange-500 text-white font-extrabold rounded-xl text-xs cursor-pointer mt-1"
+                  >
+                    {isLoading ? "Authenticating..." : "Sign In to Web Portal"}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleRegisterMerchant} className="space-y-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-zinc-400 uppercase">Owner Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Chef John Smith"
+                      value={ownerName}
+                      onChange={(e) => setOwnerName(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-zinc-400 uppercase">Restaurant Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Gourmet Burger Hub"
+                      value={restaurantNameInput}
+                      onChange={(e) => setRestaurantNameInput(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold text-zinc-400 uppercase">Cuisine</label>
+                      <select
+                        value={cuisineTypeInput}
+                        onChange={(e) => setCuisineTypeInput(e.target.value)}
+                        className="w-full h-10 px-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs"
+                      >
+                        <option value="Burgers & American">Burgers</option>
+                        <option value="Pizza & Italian">Pizza</option>
+                        <option value="Asian & Sushi">Asian</option>
+                        <option value="Grill & Steakhouse">Grill</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-zinc-400 uppercase">Email</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="email@store.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-zinc-400 uppercase">Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-11 bg-orange-600 hover:bg-orange-500 text-white font-extrabold rounded-xl text-xs cursor-pointer mt-1"
+                  >
+                    {isLoading ? "Creating Account..." : "Register Restaurant"}
                   </button>
                 </form>
               )}
@@ -1140,23 +1095,23 @@ export default function Home() {
         )}
 
         {/* FOOTER */}
-        <footer className="border-t border-zinc-800/80 bg-zinc-950 py-12 text-zinc-500 text-xs">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-xl bg-orange-600 flex items-center justify-center font-bold text-white text-xs">
+        <footer className="border-t border-white/10 bg-[#070709] py-10 text-zinc-500 text-xs">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-7 h-7 rounded-lg bg-orange-600 flex items-center justify-center font-bold text-white text-xs">
                 QB
               </div>
-              <span className="font-extrabold text-white text-sm">QuickBite Platform</span>
+              <span className="font-extrabold text-white text-xs">QuickBite Platform</span>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-6 font-semibold">
-              <a href="#ecosystem" className="hover:text-zinc-300">Ecosystem</a>
-              <a href="#download" className="hover:text-zinc-300">Download App</a>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-semibold">
+              <a href="#ecosystem" className="hover:text-zinc-300">Overview</a>
+              <a href="#download" className="hover:text-zinc-300 text-emerald-400">Android APK</a>
               <a href="#roles" className="hover:text-zinc-300">Roles</a>
-              <a href={APK_URL} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Android APK</a>
+              <a href="#portal" className="hover:text-zinc-300 text-orange-400">Portal Sign In</a>
             </div>
 
-            <p>© 2026 QuickBite Ecosystem. All rights reserved.</p>
+            <p className="text-[11px]">© 2026 QuickBite Ecosystem.</p>
           </div>
         </footer>
       </div>
