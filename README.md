@@ -4,21 +4,27 @@ QuickBite is a full-stack food delivery platform for customers, restaurant merch
 
 The platform supports the complete ordering journey from account creation to restaurant browsing, cart checkout, Paystack payment, kitchen fulfilment, driver dispatch, delivery tracking, chat, ratings, profile management, and admin reporting.
 
+## Live Access & Mobile APK
+
+- **Customer & Driver Mobile APK**: [Download QuickBite Android APK](https://expo.dev/artifacts/eas/PjfHlmDs07IXcpGya_Sm93sY4m8e-BK6O0ZvwODc2bU.apk)
+- **Merchant & Admin Web Portal**: Access the web portal to log in as a merchant or admin, register a new restaurant partner, or manage kitchen queues.
+- **Production API URL**: `https://quickbite-api-production-903f.up.railway.app`
+
 ## What The Project Does
 
 QuickBite is split into four user experiences:
 
-- Customers use the mobile app to browse restaurants, filter meals, add items to cart, save delivery addresses, pay for orders, chat with merchants, upload profile photos, and track order progress.
-- Merchants use the mobile app and web portal to manage incoming kitchen orders, update menu items, upload food and restaurant images, maintain restaurant profile details, and reply to customer chats.
-- Drivers use the mobile app to go online, accept delivery jobs, view active order details, share live location, complete deliveries, review delivery history, and update their profile.
-- Admins use the mobile app and web portal to monitor platform stats, approve or suspend restaurants, manage users, review orders, cancel active orders, and inspect performance reports.
+- **Customers** use the mobile app (installed via Android APK) to browse restaurants, filter meals, add items to cart, save delivery addresses, pay for orders, chat with merchants, upload profile photos, and track order progress.
+- **Merchants** use the web portal and mobile app to manage incoming kitchen orders, update menu items, upload food and restaurant images, maintain restaurant profile details, and reply to customer chats.
+- **Drivers** use the mobile app to go online, accept delivery jobs, view active order details, share live location, complete deliveries, review delivery history, and update their profile.
+- **Admins** use the web portal to monitor platform stats, approve or suspend restaurants, manage users, review orders, cancel active orders, and inspect performance reports.
 
 ## Project Structure
 
 ```text
 QuickBite/
   mobile/    Expo React Native app for customer, merchant, driver, and admin users.
-  web/       Next.js web portal for admin and merchant dashboard workflows.
+  web/       Next.js web portal with responsive landing page, mobile menu drawer, & admin/merchant management.
   server/    Active Node.js API using Express, Prisma, Neon/Postgres, Paystack, and uploads.
   backend/   Older Spring Boot reference backend kept for reference only. Do not deploy this folder.
   images/    Project screenshots and supporting image assets.
@@ -28,11 +34,11 @@ QuickBite/
 ## Technology Stack
 
 - Mobile: Expo SDK 54, React Native 0.81, React 19, React Navigation, Redux Toolkit, Secure Store, Camera, Image Picker, Location, Async Storage.
-- Web: Next.js 16, React 19, TypeScript, Tailwind CSS 4.
+- Web: Next.js 16, React 19, TypeScript, Tailwind CSS 4, custom dark design system, glassmorphism, responsive mobile drawer menu.
 - API: Node.js 20+, Express, Prisma, PostgreSQL, JWT authentication, bcrypt password hashing, Multer uploads, Cloudinary image storage, Paystack payments.
 - Database: Prisma schema with users, restaurants, menu items, orders, order items, chat messages, roles, statuses, and useful indexes.
 - Deployment: Railway for the Node API and Vercel for the Next.js web portal.
-- Mobile builds: Expo and EAS for Android and iOS builds.
+- Mobile builds: Expo and EAS for Android (.APK) and iOS builds.
 
 ## Main Features
 
