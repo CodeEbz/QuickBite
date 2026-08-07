@@ -372,7 +372,7 @@ export default function Home() {
             </nav>
 
             {/* Header Right CTAs */}
-            <div className="hidden sm:flex items-center space-x-3">
+            <div className="hidden lg:flex items-center space-x-3">
               <a
                 href={APK_URL}
                 target="_blank"
@@ -413,7 +413,7 @@ export default function Home() {
 
           {/* Mobile Navigation Drawer */}
           {mobileMenuOpen && (
-            <div className="lg:hidden border-t border-white/[0.08] bg-[#08080c]/98 backdrop-blur-2xl px-5 pt-4 pb-6 space-y-4 animate-slide-down">
+            <div className="lg:hidden border-t border-white/[0.08] bg-[#08080c]/98 backdrop-blur-2xl px-5 py-4 animate-slide-down">
               <nav className="flex flex-col space-y-1 text-sm font-semibold">
                 <a
                   href="#ecosystem"
@@ -429,7 +429,7 @@ export default function Home() {
                   className="flex items-center space-x-3 px-4 py-3 rounded-xl text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-bold transition-colors"
                 >
                   <span className="text-base">📱</span>
-                  <span>Download Mobile APK</span>
+                  <span>Mobile App</span>
                 </a>
                 <a
                   href="#roles"
@@ -445,34 +445,9 @@ export default function Home() {
                   className="flex items-center space-x-3 px-4 py-3 rounded-xl text-orange-400 bg-orange-500/10 border border-orange-500/20 font-bold transition-colors"
                 >
                   <span className="text-base">💻</span>
-                  <span>Merchant & Admin Portal</span>
+                  <span>Portal Access</span>
                 </a>
               </nav>
-
-              <div className="pt-3 border-t border-zinc-800/80 flex flex-col gap-3">
-                <a
-                  href={APK_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-emerald w-full justify-center text-xs"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  <span>Download Mobile APK</span>
-                </a>
-
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setShowAuthModal(true);
-                    setError(null);
-                  }}
-                  className="btn-primary w-full justify-center text-xs"
-                >
-                  Sign In to Web Portal
-                </button>
-              </div>
             </div>
           )}
         </header>
